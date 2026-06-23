@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import type { AgentSnapshot } from "@/lib/snapshot";
+import type { AgentSnapshot } from "@/lib/types/snapshot";
 import { STRATEGY_META } from "@/lib/strategyMeta";
 import { StrategyBadge, LiveBadge } from "@/components/StrategyBadge";
 import { Sparkline } from "@/components/Sparkline";
@@ -12,10 +12,12 @@ export function AgentCard({
   snap,
   rank,
   delayIndex = 0,
+  onClick,
 }: {
   snap: AgentSnapshot;
   rank: number;
   delayIndex?: number;
+  onClick?: () => void;
 }) {
   const [following, setFollowing] = useState(false);
   const { agent, curve, equity, roiPct, sharpe, maxDrawdown, annualizedVol } = snap;
@@ -25,16 +27,18 @@ export function AgentCard({
 
   return (
     <motion.article
-      className="glass ring-glow group relative flex flex-col gap-0 overflow-hidden rounded-xl2"
+      className={`glass ring-glow group relative flex flex-col gap-0 overflow-hidden rounded-xl2 ${onClick ? "cursor-pointer" : ""}`}
       initial={{ opacity: 0, y: 24, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
+      whileHover={onClick ? { scale: 1.015 } : undefined}
       transition={{
         type: "spring",
         stiffness: 160,
         damping: 22,
         delay: 0.08 + delayIndex * 0.07,
       }}
-      aria-label={`${agent.name} agent card`}
+      onClick={onClick}
+      aria-label={`${agent.name} agent card${onClick ? " — click for details" : ""}`}
     >
       {/* color accent bar at top */}
       <div

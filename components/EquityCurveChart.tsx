@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { UTCTimestamp } from "lightweight-charts";
-import type { AgentSnapshot } from "@/lib/snapshot";
+import type { AgentSnapshot } from "@/lib/types/snapshot";
 import { STRATEGY_META } from "@/lib/strategyMeta";
 
 export function EquityCurveChart({ agents }: { agents: AgentSnapshot[] }) {

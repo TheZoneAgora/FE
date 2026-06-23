@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import type { AgentDataSource } from "@/lib/data/AgentDataSource";
 import type {
   Agent,
@@ -7,6 +9,7 @@ import type {
   PaperPortfolio,
   Season,
 } from "@/lib/types/domain";
+import type { MintRealData } from "@/lib/types/mint";
 import {
   DEFAULT_FEE_BPS,
   DEFAULT_INITIAL_CAPITAL,
@@ -20,6 +23,12 @@ import {
   computeSharpe,
   normalizeRacePositions,
 } from "@/lib/data/metrics";
+
+function loadMintRealData(): MintRealData {
+  const filePath = path.join(process.cwd(), "lib/data/mint/mint-real-data.json");
+  const raw = fs.readFileSync(filePath, "utf-8");
+  return JSON.parse(raw) as MintRealData;
+}
 
 /**
  * Number of points in the season so far. In the prototype we expose a fixed
@@ -45,6 +54,19 @@ export class MockDataSource implements AgentDataSource {
     agentId: string,
     seasonId: string
   ): Promise<PaperPortfolio> {
+    // MINT uses real trade data for Season 1
+    if (agentId === "mint" && seasonId === "s1") {
+      const mintData = loadMintRealData();
+      return {
+        agentId,
+        seasonId,
+        initialCapital: mintData.initialCapital,
+        feeBps: DEFAULT_FEE_BPS,
+        slippageBps: DEFAULT_SLIPPAGE_BPS,
+        equityCurve: mintData.equityCurve,
+      };
+    }
+
     const agent = AGENTS.find((a) => a.id === agentId)!;
     const season = SEASONS.find((s) => s.id === seasonId) ?? SEASONS[0];
     const days = season.status === "frozen" ? 31 : SEASON_DAYS;
@@ -64,6 +86,10 @@ export class MockDataSource implements AgentDataSource {
       slippageBps: DEFAULT_SLIPPAGE_BPS,
       equityCurve,
     };
+  }
+
+  getMintRealData(): MintRealData {
+    return loadMintRealData();
   }
 
   async getLeaderboard(

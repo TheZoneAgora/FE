@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { LeaderboardMetric } from "@/lib/types/domain";
-import type { AgentSnapshot } from "@/lib/snapshot";
+import type { AgentSnapshot } from "@/lib/types/snapshot";
 import { STRATEGY_META, METRIC_LABEL } from "@/lib/strategyMeta";
 import { LiveBadge } from "@/components/StrategyBadge";
 import { fmtPct } from "@/lib/format";

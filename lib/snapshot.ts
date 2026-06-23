@@ -1,38 +1,15 @@
-import type {
-  Agent,
-  EquityPoint,
-  Leaderboard,
-  LeaderboardEntry,
-  LeaderboardMetric,
-  Season,
-} from "@/lib/types/domain";
+import "server-only";
+import type { MintRealData } from "@/lib/types/mint";
+import type { AgentSnapshot, DashboardSnapshot } from "@/lib/types/snapshot";
 import { getDataSource } from "@/lib/data";
 import {
   computeAnnualizedVol,
   computeMaxDrawdown,
   computeRoiPct,
   computeSharpe,
-  normalizeRacePositions,
 } from "@/lib/data/metrics";
 
-export interface AgentSnapshot {
-  agent: Agent;
-  initialCapital: number;
-  curve: EquityPoint[];
-  sharpe: number;
-  maxDrawdown: number;
-  roiPct: number;
-  annualizedVol: number;
-  equity: number;
-  pnl: number;
-}
-
-export interface DashboardSnapshot {
-  season: Season;
-  seasons: Season[];
-  asOfDayIndex: number;
-  agents: AgentSnapshot[];
-}
+export type { AgentSnapshot, DashboardSnapshot };
 
 /** Build the full snapshot server-side for a season. */
 export async function buildSnapshot(
@@ -44,6 +21,12 @@ export async function buildSnapshot(
     (seasonId && seasons.find((s) => s.id === seasonId)) ||
     (await ds.getCurrentSeason());
   const agents = await ds.getAgents(season.id);
+
+  // Duck-type getMintRealData — available on MockDataSource, skipped otherwise
+  const mintRealData: MintRealData | undefined =
+    typeof (ds as unknown as { getMintRealData?: () => MintRealData }).getMintRealData === "function"
+      ? (ds as unknown as { getMintRealData: () => MintRealData }).getMintRealData()
+      : undefined;
 
   const agentSnaps: AgentSnapshot[] = await Promise.all(
     agents.map(async (agent) => {
@@ -59,6 +42,7 @@ export async function buildSnapshot(
         annualizedVol: computeAnnualizedVol(p.equityCurve),
         equity: last.equity,
         pnl: last.pnl,
+        mintData: agent.id === "mint" && season.id === "s1" ? mintRealData : undefined,
       };
     })
   );
@@ -66,44 +50,4 @@ export async function buildSnapshot(
   const asOfDayIndex = agentSnaps[0].curve[agentSnaps[0].curve.length - 1].dayIndex;
 
   return { season, seasons, asOfDayIndex, agents: agentSnaps };
-}
-
-/**
- * Compute a ranked leaderboard from a snapshot for a given metric.
- * Runs client-side so metric switches are instant (no refetch).
- */
-export function computeLeaderboard(
-  agents: AgentSnapshot[],
-  metric: LeaderboardMetric,
-  seasonId: string,
-  asOfDayIndex: number
-): Leaderboard {
-  const oriented = (s: AgentSnapshot) =>
-    metric === "sharpe"
-      ? s.sharpe
-      : metric === "roiPct"
-      ? s.roiPct
-      : -s.maxDrawdown;
-
-  const sorted = [...agents].sort((a, b) => oriented(b) - oriented(a));
-
-  const racePos = normalizeRacePositions(
-    sorted.map((s) =>
-      metric === "sharpe" ? s.sharpe : metric === "roiPct" ? s.roiPct : s.maxDrawdown
-    ),
-    metric
-  );
-
-  const entries: LeaderboardEntry[] = sorted.map((s, i) => ({
-    agentId: s.agent.id,
-    rank: i + 1,
-    equity: s.equity,
-    pnl: s.pnl,
-    roiPct: s.roiPct,
-    sharpe: s.sharpe,
-    maxDrawdown: s.maxDrawdown,
-    racePos: racePos[i],
-  }));
-
-  return { seasonId, metric, asOfDayIndex, entries };
 }

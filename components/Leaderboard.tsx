@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LeaderboardMetric } from "@/lib/types/domain";
-import type { AgentSnapshot } from "@/lib/snapshot";
-import { computeLeaderboard } from "@/lib/snapshot";
+import type { AgentSnapshot } from "@/lib/types/snapshot";
+import { computeLeaderboard } from "@/lib/leaderboard";
 import { AGENTS } from "@/lib/data/seed/seasons";
 import { STRATEGY_META, METRIC_LABEL } from "@/lib/strategyMeta";
 import { StrategyBadge, LiveBadge } from "@/components/StrategyBadge";

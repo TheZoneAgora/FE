@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import type { LeaderboardMetric } from "@/lib/types/domain";
-import type { DashboardSnapshot } from "@/lib/snapshot";
-import { computeLeaderboard } from "@/lib/snapshot";
+import type { DashboardSnapshot } from "@/lib/types/snapshot";
+import { computeLeaderboard } from "@/lib/leaderboard";
 import { RaceTrack } from "@/components/RaceTrack";
 import { Leaderboard } from "@/components/Leaderboard";
 import { AgentCard } from "@/components/AgentCard";
 import { EquityCurveChart } from "@/components/EquityCurveChart";
+import { MintDetailPanel } from "@/components/MintDetailPanel";
 import { AGENTS } from "@/lib/data/seed/seasons";
 import { fmtUsd } from "@/lib/format";
 import { DEFAULT_INITIAL_CAPITAL } from "@/lib/config/capital";
@@ -17,6 +18,9 @@ export function DashboardClient({ snapshot }: { snapshot: DashboardSnapshot }) {
   const { season, seasons, asOfDayIndex, agents } = snapshot;
   const [metric, setMetric] = useState<LeaderboardMetric>("sharpe");
   const [selectedSeason, setSelectedSeason] = useState(season.id);
+  const [mintPanelOpen, setMintPanelOpen] = useState(false);
+
+  const mintSnap = agents.find((a) => a.agent.id === "mint");
 
   const leaderboard = computeLeaderboard(agents, metric, season.id, asOfDayIndex);
 
@@ -105,6 +109,7 @@ export function DashboardClient({ snapshot }: { snapshot: DashboardSnapshot }) {
                   snap={snap}
                   rank={entry.rank}
                   delayIndex={i}
+                  onClick={snap.agent.id === "mint" && snap.mintData ? () => setMintPanelOpen(true) : undefined}
                 />
               );
             })}
@@ -113,6 +118,11 @@ export function DashboardClient({ snapshot }: { snapshot: DashboardSnapshot }) {
 
         {/* ── Gradient rule ──────────────────────────────────── */}
         <div className="gradient-rule h-px w-full opacity-40" />
+
+        {/* ── MINT detail panel ─────────────────────────────── */}
+        {mintPanelOpen && mintSnap?.mintData && (
+          <MintDetailPanel data={mintSnap.mintData} onClose={() => setMintPanelOpen(false)} />
+        )}
 
         {/* ── Footnote / info ───────────────────────────────── */}
         <footer className="text-center text-[12px] leading-relaxed text-muted">
