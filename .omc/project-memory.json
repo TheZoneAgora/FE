@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1782133911764,
+  "lastScanned": 1784564748742,
   "projectRoot": "/Users/minsungpark/.superset/projects/thezoneagora",
   "techStack": {
     "languages": [
@@ -24,7 +24,7 @@
     "frameworks": [
       {
         "name": "next",
-        "version": "15.3.3",
+        "version": "15.5.19",
         "category": "fullstack"
       },
       {
@@ -55,7 +55,7 @@
   },
   "conventions": {
     "namingStyle": "camelCase",
-    "importStyle": null,
+    "importStyle": "ES modules",
     "testPattern": null,
     "fileOrganization": null
   },
@@ -75,7 +75,7 @@
       "path": "app",
       "purpose": "Application code",
       "fileCount": 3,
-      "lastAccessed": 1782133911723,
+      "lastAccessed": 1784564748715,
       "keyFiles": [
         "globals.css",
         "layout.tsx",
@@ -85,21 +85,21 @@
     "components": {
       "path": "components",
       "purpose": "UI components",
-      "fileCount": 7,
-      "lastAccessed": 1782133911724,
+      "fileCount": 8,
+      "lastAccessed": 1784564748719,
       "keyFiles": [
         "AgentCard.tsx",
         "DashboardClient.tsx",
         "EquityCurveChart.tsx",
         "Leaderboard.tsx",
-        "RaceTrack.tsx"
+        "MintDetailPanel.tsx"
       ]
     },
     "design": {
       "path": "design",
       "purpose": null,
       "fileCount": 1,
-      "lastAccessed": 1782133911746,
+      "lastAccessed": 1784564748721,
       "keyFiles": [
         "reference-report.html"
       ]
@@ -107,10 +107,11 @@
     "lib": {
       "path": "lib",
       "purpose": "Library code",
-      "fileCount": 3,
-      "lastAccessed": 1782133911746,
+      "fileCount": 4,
+      "lastAccessed": 1784564748722,
       "keyFiles": [
         "format.ts",
+        "leaderboard.ts",
         "snapshot.ts",
         "strategyMeta.ts"
       ]
@@ -119,7 +120,7 @@
       "path": "lib/config",
       "purpose": "Configuration files",
       "fileCount": 1,
-      "lastAccessed": 1782133911747,
+      "lastAccessed": 1784564748723,
       "keyFiles": [
         "capital.ts"
       ]
@@ -128,7 +129,7 @@
       "path": "lib/data",
       "purpose": "Data files",
       "fileCount": 4,
-      "lastAccessed": 1782133911747,
+      "lastAccessed": 1784564748723,
       "keyFiles": [
         "AgentDataSource.ts",
         "MockDataSource.ts",
@@ -138,170 +139,15 @@
     "lib/types": {
       "path": "lib/types",
       "purpose": "Type definitions",
-      "fileCount": 1,
-      "lastAccessed": 1782133911748,
+      "fileCount": 3,
+      "lastAccessed": 1784564748724,
       "keyFiles": [
-        "domain.ts"
+        "domain.ts",
+        "mint.ts",
+        "snapshot.ts"
       ]
     }
   },
-  "hotPaths": [
-    {
-      "path": "components/EquityCurveChart.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1782052421669,
-      "type": "file"
-    },
-    {
-      "path": "tsconfig.json",
-      "accessCount": 1,
-      "lastAccessed": 1782051871892,
-      "type": "file"
-    },
-    {
-      "path": "next.config.mjs",
-      "accessCount": 1,
-      "lastAccessed": 1782051880948,
-      "type": "file"
-    },
-    {
-      "path": "postcss.config.mjs",
-      "accessCount": 1,
-      "lastAccessed": 1782051884508,
-      "type": "file"
-    },
-    {
-      "path": "tailwind.config.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782051896828,
-      "type": "file"
-    },
-    {
-      "path": "lib/types/domain.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782051913386,
-      "type": "file"
-    },
-    {
-      "path": "lib/config/capital.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782051923552,
-      "type": "file"
-    },
-    {
-      "path": "lib/data/metrics.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782051941267,
-      "type": "file"
-    },
-    {
-      "path": "lib/data/sim/StrategySimulator.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782051962753,
-      "type": "file"
-    },
-    {
-      "path": "lib/data/seed/seasons.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782051980188,
-      "type": "file"
-    },
-    {
-      "path": "lib/data/AgentDataSource.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782051986874,
-      "type": "file"
-    },
-    {
-      "path": "lib/data/MockDataSource.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782052009388,
-      "type": "file"
-    },
-    {
-      "path": "lib/data/index.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782052019810,
-      "type": "file"
-    },
-    {
-      "path": "lib/strategyMeta.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782052032725,
-      "type": "file"
-    },
-    {
-      "path": "lib/format.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782052040493,
-      "type": "file"
-    },
-    {
-      "path": "lib/snapshot.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782052063961,
-      "type": "file"
-    },
-    {
-      "path": "app/globals.css",
-      "accessCount": 1,
-      "lastAccessed": 1782052084506,
-      "type": "file"
-    },
-    {
-      "path": "app/layout.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1782052097449,
-      "type": "file"
-    },
-    {
-      "path": "components/Sparkline.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1782052108822,
-      "type": "file"
-    },
-    {
-      "path": "components/StrategyBadge.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1782052119653,
-      "type": "file"
-    },
-    {
-      "path": "lib/hooks/useLivePulse.ts",
-      "accessCount": 1,
-      "lastAccessed": 1782052127680,
-      "type": "file"
-    },
-    {
-      "path": "components/RaceTrack.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1782052166327,
-      "type": "file"
-    },
-    {
-      "path": "components/Leaderboard.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1782052258788,
-      "type": "file"
-    },
-    {
-      "path": "components/AgentCard.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1782052283536,
-      "type": "file"
-    },
-    {
-      "path": "app/page.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1782052316773,
-      "type": "file"
-    },
-    {
-      "path": "components/DashboardClient.tsx",
-      "accessCount": 1,
-      "lastAccessed": 1782052358583,
-      "type": "file"
-    }
-  ],
+  "hotPaths": [],
   "userDirectives": []
 }
