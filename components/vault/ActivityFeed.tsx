@@ -131,7 +131,10 @@ function describeEvent(event: VaultActivityEvent): string {
     case "OrderExecuted":
     case "DeepBookOrderExecuted": {
       const amount = typeof p.amount === "string" ? `${formatUsdc(BigInt(p.amount))} USDC` : null;
-      return [sideLine, amount].filter(Boolean).join(" · ");
+      // 라이브 엔진발 체결 이벤트는 amount 대신 quantity(number, 코인 수량)를 담는다.
+      const quantity =
+        typeof p.quantity === "number" ? `${p.quantity.toFixed(4)} 수량` : null;
+      return [sideLine, amount ?? quantity].filter(Boolean).join(" · ");
     }
     case "EmergencyLiquidated": {
       const crypto =
