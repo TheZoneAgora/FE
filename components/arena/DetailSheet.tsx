@@ -127,26 +127,22 @@ export function DetailSheet({
   const risk = Math.round(amount * 0.08);
 
   function handleDelegateClick() {
+    // 지갑 연결 여부와 무관하게 데모(위임 시뮬레이션)는 항상 진행된다.
+    // 지갑이 있으면 나중에 실제 볼트 흐름(온보딩→create_vault)으로 이어갈 수 있다는
+    // 안내만 곁들이고, 없어도 심사위원/방문자가 전체 플로우를 바로 체험할 수 있어야 한다.
     if (stage !== "idle") return;
-    const run = () => {
-      setStage("signing");
+    setStage("signing");
+    setTimeout(() => {
+      setStage("submitting");
       setTimeout(() => {
-        setStage("submitting");
-        setTimeout(() => {
-          if (btnRef.current) {
-            const r = btnRef.current.getBoundingClientRect();
-            burst(r.left + r.width / 2, r.top + r.height / 2, reduced);
-          }
-          setStage("idle");
-          onDelegate(agent, amount);
-        }, 900);
+        if (btnRef.current) {
+          const r = btnRef.current.getBoundingClientRect();
+          burst(r.left + r.width / 2, r.top + r.height / 2, reduced);
+        }
+        setStage("idle");
+        onDelegate(agent, amount);
       }, 900);
-    };
-    if (!wallet.connected) {
-      wallet.requestConnect(run);
-    } else {
-      run();
-    }
+    }, 900);
   }
 
   return (
@@ -294,7 +290,11 @@ export function DetailSheet({
                   </>
                 )}
               </button>
-              <span className="dg-note">서명 2회 · 약 30초 · 언제든 해지</span>
+              <span className="dg-note">
+                {wallet.connected
+                  ? "서명 2회 · 약 30초 · 언제든 해지"
+                  : "지갑 연결 없이 데모로 체험 중 · 실제 볼트는 지갑 연결 후 이용"}
+              </span>
             </div>
           </div>
         </div>

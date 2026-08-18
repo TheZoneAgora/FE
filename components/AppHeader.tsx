@@ -24,6 +24,9 @@ export function AppHeader() {
           <span className="season-chip num">
             <i /> SEASON 1 · LIVE
           </span>
+          <Link href="/derby" className="btn ghost">
+            더비 v1
+          </Link>
           <Link href="/vault" className="btn ghost">
             내 볼트
           </Link>
