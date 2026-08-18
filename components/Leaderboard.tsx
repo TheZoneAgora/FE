@@ -6,7 +6,7 @@ import type { LeaderboardMetric } from "@/lib/types/domain";
 import type { AgentSnapshot } from "@/lib/types/snapshot";
 import { computeLeaderboard } from "@/lib/leaderboard";
 import { AGENTS } from "@/lib/data/seed/seasons";
-import { STRATEGY_META, METRIC_LABEL } from "@/lib/strategyMeta";
+import { METRIC_LABEL } from "@/lib/strategyMeta";
 import { StrategyBadge, LiveBadge } from "@/components/StrategyBadge";
 import { fmtUsd, fmtPct, fmtNum, fmtPctFrac } from "@/lib/format";
 
@@ -48,23 +48,23 @@ export function Leaderboard({
       <header className="relative flex flex-wrap items-end justify-between gap-3 border-b border-line/60 px-5 pb-4 pt-5 sm:px-6">
         <div>
           <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
-            Standings
+            순위
           </div>
           <h2 className="mt-1 font-display text-xl font-bold tracking-tight text-white sm:text-2xl">
-            Leaderboard
+            리더보드
           </h2>
         </div>
         {/* metric selector */}
         <div
           role="group"
-          aria-label="Ranking metric"
+          aria-label="정렬 기준"
           className="flex gap-1 rounded-xl border border-line/70 bg-black/30 p-1"
         >
           {METRICS.map((m) => (
             <button
               key={m}
               onClick={() => handleMetric(m)}
-              className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
+              className={`flex min-h-[44px] items-center rounded-lg px-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
                 metric === m
                   ? "bg-accent text-white shadow-md"
                   : "text-muted hover:text-ink"
@@ -80,8 +80,8 @@ export function Leaderboard({
       {/* column headers */}
       <div className="grid grid-cols-[40px_1fr_auto_auto_auto] gap-x-3 border-b border-line/40 px-5 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted sm:px-6">
         <span className="text-center">#</span>
-        <span>Agent</span>
-        <span className="hidden text-right sm:block">Equity</span>
+        <span>에이전트</span>
+        <span className="hidden text-right sm:block">자산</span>
         <span className="text-right">ROI</span>
         <span className="text-right">
           {metric === "sharpe" ? "Sharpe" : metric === "maxDrawdown" ? "Max DD" : "ROI %"}
@@ -94,7 +94,6 @@ export function Leaderboard({
           {leaderboard.entries.map((entry) => {
             const agent = AGENTS.find((a) => a.id === entry.agentId)!;
             const snap = agents.find((s) => s.agent.id === entry.agentId)!;
-            const meta = STRATEGY_META[agent.strategyType];
             const uptrend = entry.roiPct >= 0;
 
             const primaryValue =
@@ -176,10 +175,9 @@ export function Leaderboard({
       </ul>
 
       <footer className="border-t border-line/40 px-5 py-3 text-[11px] text-muted sm:px-6">
-        Ranked by{" "}
-        <span className="font-semibold text-accent">{METRIC_LABEL[metric]}</span>.
-        Normalized metric — raw absolute PnL is never the sole sort key.
-        D-{asOfDayIndex} of season.
+        <span className="font-semibold text-accent">{METRIC_LABEL[metric]}</span>{" "}
+        기준 정렬. 정규화된 지표이며 단순 손익 절대값만으로는 정렬하지 않습니다.
+        시즌 D-{asOfDayIndex}.
       </footer>
     </section>
   );

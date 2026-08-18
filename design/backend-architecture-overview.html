@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agora — Backend / Infra Architecture Overview</title>
+<style>
+  :root {
+    --agora-orange: #ff5a1f;
+    --arena-black: #11100f;
+    --warm-ivory: #fff8ed;
+    --surface-dark: #1b1917;
+    --surface-light: #f4ede3;
+    --text-muted-dark: #8d857b;
+    --text-muted-light: #b9b0a5;
+    --status-positive: #24c77a;
+    --status-negative: #f04f5f;
+    --status-warning: #f6b73c;
+    --border: rgba(255,248,237,0.09);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--arena-black);
+    color: var(--warm-ivory);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.55;
+    font-size: 15px;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+  header { margin-bottom: 40px; }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 12px;
+    color: var(--agora-orange);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: "Inter Tight", Inter, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-size: 34px;
+    margin: 0 0 8px;
+  }
+  .sub { color: var(--text-muted-light); font-size: 14px; }
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 56px 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  h2 .tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted-light);
+    font-weight: 500;
+    margin-left: 10px;
+  }
+  h3 { font-size: 15px; font-weight: 600; margin: 28px 0 10px; color: var(--warm-ivory); }
+  p { color: #e7ddcd; }
+  code, .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .card {
+    background: var(--surface-dark);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+  }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  @media (max-width: 720px) { .grid3, .grid2 { grid-template-columns: 1fr; } }
+
+  .diagram {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    align-items: stretch;
+    margin: 8px 0 4px;
+  }
+  .dbox {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 16px;
+    background: var(--surface-dark);
+    position: relative;
+    min-height: 180px;
+  }
+  .dbox h4 { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
+  .dbox .desc { font-size: 12.5px; color: var(--text-muted-light); }
+  .arrow { display: flex; align-items: center; justify-content: center; color: var(--text-muted-light); font-size: 20px; }
+
+  .pill {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 9px;
+    border-radius: 100px;
+    margin-bottom: 8px;
+  }
+  .pill.done { background: rgba(36,199,122,0.14); color: var(--status-positive); }
+  .pill.partial { background: rgba(246,183,60,0.16); color: var(--status-warning); }
+  .pill.none { background: rgba(240,79,95,0.14); color: var(--status-negative); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--text-muted-light); font-weight: 600; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.05em; }
+  tr:last-child td { border-bottom: none; }
+  td.mono, th.mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; }
+
+  .status-matrix td:nth-child(2) { font-weight: 600; }
+  .s-done { color: var(--status-positive); }
+  .s-partial { color: var(--status-warning); }
+  .s-none { color: var(--status-negative); }
+
+  .flow {
+    list-style: none;
+    margin: 0; padding: 0;
+    counter-reset: step;
+  }
+  .flow li {
+    counter-increment: step;
+    position: relative;
+    padding: 10px 0 10px 34px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  .flow li:last-child { border-bottom: none; }
+  .flow li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0; top: 9px;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: var(--surface-light);
+    color: var(--arena-black);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flow li .err { color: var(--status-negative); font-family: "SF Mono", ui-monospace, monospace; font-size: 11.5px; }
+
+  .note {
+    border-left: 3px solid var(--agora-orange);
+    padding: 10px 16px;
+    background: rgba(255,90,31,0.06);
+    border-radius: 0 10px 10px 0;
+    font-size: 13px;
+    color: #f0e6d6;
+  }
+  .callout {
+    border-left: 3px solid var(--status-negative);
+    padding: 10px 16px;
+    background: rgba(240,79,95,0.07);
+    border-radius: 0 10px 10px 0;
+    font-size: 13px;
+  }
+  .badge-fn { font-family: "SF Mono", monospace; font-size: 12px; background: var(--surface-light); color: var(--arena-black); padding: 1px 6px; border-radius: 5px; }
+  ul.compact { margin: 6px 0; padding-left: 20px; }
+  ul.compact li { margin-bottom: 4px; font-size: 13px; color: #e7ddcd; }
+  .footer { margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-muted-light); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">Agora · Internal Reference</div>
+  <h1>백엔드 / 인프라 아키텍처 개요</h1>
+  <div class="sub">기준: <code>TheZoneAgora/contract</code> @ 2026-08-15 (27 commits) · 작성 2026-08-18 · FE 개발용 참고 문서</div>
+</header>
+
+<section>
+  <h2>1. 큰 그림</h2>
+  <div class="diagram">
+    <div class="dbox">
+      <span class="pill partial">진행 중</span>
+      <h4>FE (본인 담당)</h4>
+      <div class="desc">Next.js. Sui 지갑(dApp Kit)으로 사용자가 직접 서명 → Vault 컨트랙트 직접 호출. BE 없이도 입출금/조회 가능.</div>
+    </div>
+    <div class="arrow">⇄</div>
+    <div class="dbox">
+      <span class="pill done">구현+테스트 완료</span>
+      <h4>Vault 컨트랙트 (진웅)</h4>
+      <div class="desc">Move/Sui, Testnet 배포됨. UserVault 자산 보관, 한도 강제, Kill Switch, DeepBook 실행. 60/60 테스트 통과.</div>
+    </div>
+  </div>
+  <div class="diagram" style="margin-top:14px;">
+    <div class="dbox">
+      <span class="pill none">미착수</span>
+      <h4>Providing Agent (본인 담당)</h4>
+      <div class="desc">시그널 수신 → 인증(backtest/shadow) → Trust Score → AgoraAgent에 검증된 시그널 전달. 팀 배정상 FE와 함께 본인 소관.</div>
+    </div>
+    <div class="arrow">⇄</div>
+    <div class="dbox">
+      <span class="pill none">미착수</span>
+      <h4>Web2 BE (형권)</h4>
+      <div class="desc">GitHub 레포 0커밋. 스택도 미확정(Node/Flask, Postgres+Redis 논의만). x402 리플레이 저장소, 실행 레코드 DB 등이 여기 속함.</div>
+    </div>
+  </div>
+  <p style="margin-top:14px;" class="note">
+    핵심: <b>FE는 BE를 기다릴 필요가 없다.</b> Vault 입출금·조회·긴급탈출·Kill Switch 상태는 전부 온체인 함수라 지갑 연결만 되면 컨트랙트를 직접 호출/조회할 수 있다 (아래 §7 JS SDK 참고). BE/Providing Agent가 필요한 부분(시그널 피드, Trust Score, 리더보드 실데이터)은 지금 없는 게 맞으므로 그 구간만 mock으로 채우고 나머지는 실제 컨트랙트와 지금 바로 연결 가능하다.
+  </p>
+</section>
+
+<section>
+  <h2>2. 각 파트 진행 현황</h2>
+  <table class="status-matrix">
+    <tr><th>영역</th><th>상태</th><th>담당</th><th>비고</th></tr>
+    <tr><td>Vault 컨트랙트 코어 (입출금/한도/권한)</td><td class="s-done">완료</td><td>진웅</td><td>investment_vault.move, 8개 유닛테스트</td></tr>
+    <tr><td>Kill Switch (급락 감지)</td><td class="s-done">완료</td><td>진웅</td><td>5개 테스트, Owner만 복구 가능</td></tr>
+    <tr><td>긴급 탈출 (전량청산 / 정지+회수)</td><td class="s-done">완료</td><td>진웅</td><td>10개 테스트</td></tr>
+    <tr><td>Mock DEX 실행 경로</td><td class="s-done">완료</td><td>진웅</td><td>order_executor, 18개 테스트</td></tr>
+    <tr><td>DeepBook v3 실거래 경로</td><td class="s-partial">컴파일만 완료, 온체인 미검증</td><td>진웅</td><td>Testnet E2E 아직 0건 — 부분체결/DEEP수수료 미검증</td></tr>
+    <tr><td>x402 결제/영수증 (컨트랙트 측)</td><td class="s-partial">기본 구현</td><td>진웅</td><td>payment_splitter.move, 23/23 JS 테스트</td></tr>
+    <tr><td>Providing Agent (시그널 인증 서버)</td><td class="s-none">미착수</td><td>본인</td><td>backtest/shadow trading/trust score 전부 미구현</td></tr>
+    <tr><td>Agora↔Providing Agent x402 연결</td><td class="s-none">미착수</td><td>공동</td><td>팀 공통 블로커</td></tr>
+    <tr><td>위험도(risk_score_bps) 산출식</td><td class="s-none">미확정</td><td>BE 담당 예정</td><td>컨트랙트는 상한 강제만, 계산 로직 없음</td></tr>
+    <tr><td>Web2 BE (실행 레코드 DB, x402 리플레이 저장소)</td><td class="s-none">미착수</td><td>형권</td><td>레포 0커밋, 스택 미확정</td></tr>
+    <tr><td>FE</td><td class="s-partial">진행 중</td><td>본인</td><td>현재 로컬: Agora Agent Derby(페이퍼 리더보드) v1</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>3. Testnet 배포 정보</h2>
+  <div class="card">
+    <table>
+      <tr><td>네트워크</td><td class="mono">Sui Testnet (chain-id <code>4c78adac</code>)</td></tr>
+      <tr><td>패키지 이름</td><td class="mono">agent_market</td></tr>
+      <tr><td>Package ID</td><td class="mono">0x0f5a55d4768a22382295652b415c0df973db45e4ac1d65c8ceadc3a331c68bfa</td></tr>
+      <tr><td>Upgrade Capability</td><td class="mono">0x7fafb50f3f59e37423316d3ce9e907a57634d98c9fc6de6d5bcaefd29c491a59</td></tr>
+      <tr><td>DeepBook 의존성</td><td class="mono">MystenLabs/deepbookv3 @ rev 3ded560...</td></tr>
+    </table>
+  </div>
+  <h3>FE에 필요한 환경변수 (contract 레포 .env.example 기준)</h3>
+  <div class="card">
+<pre class="mono" style="margin:0; white-space:pre-wrap;">NEXT_PUBLIC_AGENT_MARKET_PACKAGE_ID=0x0f5a55d4768a22382295652b415c0df973db45e4ac1d65c8ceadc3a331c68bfa
+NEXT_PUBLIC_AGORA_AGENT_OPERATOR=0x... (AgoraAgent 운영 지갑 주소 — 진웅에게 확인 필요)
+NEXT_PUBLIC_AGORA_FIAT_COIN_TYPE=0x...::usdc::USDC   (Testnet USDC 타입 — 확인 필요)
+NEXT_PUBLIC_AGORA_CRYPTO_COIN_TYPE=0x2::sui::SUI</pre>
+  </div>
+  <p class="note">AgoraAgent 운영 주소·Testnet USDC 타입은 실제 값 확인이 필요 (플레이스홀더 상태). FE가 지갑 연결/트랜잭션 서명을 실제로 테스트하려면 진웅에게 이 두 값부터 받아야 함.</p>
+</section>
+
+<section>
+  <h2>4. UserVault 데이터 모델 <span class="tag">FE가 화면에 표시할 상태값</span></h2>
+  <p>Vault는 Sui의 <b>shared object</b>다. 하나의 <code>UserVault&lt;FiatT, CryptoT&gt;</code> = 한 사용자의 볼트 하나.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0;">권한</h3>
+      <ul class="compact">
+        <li><span class="mono">owner</span> — 자산 최종 소유자 (사용자 지갑)</li>
+        <li><span class="mono">agora_agent_operator</span> — 거래 실행 권한을 가진 AgoraAgent 주소</li>
+        <li><span class="mono">agora_agent_status</span> — ACTIVE(0) / REDUCE_ONLY / PAUSED</li>
+      </ul>
+      <h3>자산</h3>
+      <ul class="compact">
+        <li><span class="mono">fiat_balance</span>, <span class="mono">crypto_balance</span></li>
+        <li><span class="mono">cost_basis_fiat</span> — 평단가 계산용 원가</li>
+      </ul>
+      <h3>한도 (1회 / epoch)</h3>
+      <ul class="compact">
+        <li><span class="mono">max_trade_amount</span> / <span class="mono">max_epoch_trade_amount</span> / <span class="mono">spent_this_epoch</span></li>
+        <li><span class="mono">max_crypto_sell_amount</span> / <span class="mono">max_epoch_crypto_sell_amount</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">실행 정책</h3>
+      <ul class="compact">
+        <li><span class="mono">allowed_pool</span> — 허용된 단일 DEX Pool 주소</li>
+        <li><span class="mono">max_daily_fiat_volume</span> / <span class="mono">daily_fiat_volume</span></li>
+        <li><span class="mono">max_position_size</span>, <span class="mono">max_loss_amount</span> / <span class="mono">realized_loss_amount</span></li>
+        <li><span class="mono">trading_start/end_minute_utc</span>, <span class="mono">max_signal_delay_ms</span>, <span class="mono">max_price_deviation_bps</span></li>
+      </ul>
+      <h3>위험도 &amp; Kill Switch</h3>
+      <ul class="compact">
+        <li><span class="mono">max_risk_score_bps</span> — BUY 전용 상한</li>
+        <li><span class="mono">loss_window_ms</span> / <span class="mono">max_window_loss_amount</span> / <span class="mono">window_loss_amount</span></li>
+        <li><span class="mono">executed_signals: Table</span> — 중복 시그널 방지</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>5. 공개 함수 (FE가 호출/조회하는 대상)</h2>
+
+  <h3>사용자(Owner) 액션</h3>
+  <table>
+    <tr><th>함수</th><th>설명</th><th>버튼 문구 (design.md 기준)</th></tr>
+    <tr><td class="mono">create_vault</td><td>USDC 입금하며 볼트 생성. AgoraAgent 주소·한도 초기값 필요</td><td>Deposit</td></tr>
+    <tr><td class="mono">deposit_more</td><td>추가 입금</td><td>Deposit</td></tr>
+    <tr><td class="mono">withdraw_all_assets</td><td>fiat+crypto 전량 즉시 출금 (한도 검사 없음, Owner 전용)</td><td>Withdraw all</td></tr>
+    <tr><td class="mono">withdraw_amount / withdraw_crypto_amount</td><td>부분 출금</td><td>Withdraw</td></tr>
+    <tr><td class="mono">revoke_agent / reactivate_agent</td><td>AgoraAgent 정지/재개 (Owner만 재개 가능)</td><td>Pause / Resume</td></tr>
+    <tr><td class="mono">set_reduce_only</td><td>신규 BUY 차단, SELL만 허용</td><td>Reduce-only mode</td></tr>
+    <tr><td class="mono">configure_execution_policy</td><td>allowed_pool, 각종 한도·위험도 상한 설정</td><td>Risk settings</td></tr>
+    <tr><td class="mono">replace_agent</td><td>AgoraAgent 운영 주소 교체</td><td>—</td></tr>
+  </table>
+
+  <h3>긴급 탈출 (Owner 전용 — §6 참고)</h3>
+  <table>
+    <tr><th>함수</th><th>설명</th></tr>
+    <tr><td class="mono">emergency_liquidate_all</td><td>(deepbook_executor / order_executor 경유) 보유 crypto 전량 시장가 매도 → fiat로. 한도·Kill Switch·거래시간 전부 무시. 청산 후 자동 PAUSED</td></tr>
+    <tr><td class="mono">emergency_pause_and_withdraw_fiat</td><td>Agent 정지 + fiat 전액 즉시 회수를 한 트랜잭션으로. crypto 포지션은 안 건드림</td></tr>
+  </table>
+
+  <h3>조회 (읽기 전용 — 화면 렌더링용)</h3>
+  <table>
+    <tr><th>함수</th><th>반환</th></tr>
+    <tr><td class="mono">vault_balance / fiat_balance / crypto_balance</td><td>잔액</td></tr>
+    <tr><td class="mono">owner / agora_agent_operator</td><td>주소</td></tr>
+    <tr><td class="mono">is_agora_agent_active / is_reduce_only / is_paused</td><td>상태 bool</td></tr>
+    <tr><td class="mono">daily_fiat_volume / max_risk_score_bps / window_loss_amount / realized_loss_amount</td><td>정책·리스크 수치</td></tr>
+    <tr><td class="mono">signal_executed</td><td>특정 signal_id 실행 여부</td></tr>
+  </table>
+
+  <h3>AgoraAgent 전용 (FE에서 호출 안 함 — 참고용)</h3>
+  <p style="font-size:13px; color:var(--text-muted-light);">
+    <span class="mono">deepbook_executor::execute_buy/execute_sell</span>, <span class="mono">order_executor::execute_buy/execute_sell</span> — AgoraAgent 서버(진웅/BE 쪽 운영 키)가 검증된 시그널로 호출. 내부적으로 investment_vault의 권한·한도·위험도·중복·시간·가격편차 검사를 전부 거친 뒤 DEX 스왑 → 같은 Vault로 즉시 정산.
+  </p>
+</section>
+
+<section>
+  <h2>6. 긴급 탈출 UX — FE에 반드시 필요 <span class="tag">법적 요구사항</span></h2>
+  <p>카톡에서 "kill 버튼 없으면 법적 문제"로 명시됨. 두 경로를 <b>명확히 분리해서</b> 노출해야 함:</p>
+  <div class="grid2">
+    <div class="card">
+      <span class="pill done" style="background:rgba(240,79,95,0.14); color:var(--status-negative);">경로 1</span>
+      <h3 style="margin-top:0;">전량 청산 (Liquidate all)</h3>
+      <p style="font-size:13px;">보유 코인을 시장가로 전부 팔아 USDC로. 실현손실 기록되지만 손실 한도로 막히지 않음. <b>min_fiat_output(최소 수령량)을 FE가 실시간 시세 기반으로 계산해서 넣어야 함 — 0 넣으면 안 됨 (샌드위치 공격 경로).</b> 청산 후 자동 정지.</p>
+    </div>
+    <div class="card">
+      <span class="pill partial">경로 2</span>
+      <h3 style="margin-top:0;">정지 + USDC만 회수 (Pause &amp; withdraw)</h3>
+      <p style="font-size:13px;">코인 포지션은 그대로 두고 USDC만 즉시 회수. Agent도 같이 정지. 실제 사용 순서는 "1번(전량청산) → 2번" 조합이 기본 시나리오.</p>
+    </div>
+  </div>
+  <p class="note">데모 하이라이트: 카톡에서 진웅이 정리한 해커톤 데모 각본은 "나쁜 시그널 라이브 리젝트" + "Kill Switch 라이브 트리거"가 임팩트 포인트로 지정됨. 이 두 버튼/상태 전환이 FE 데모 플로우에서 눈에 띄게 보여야 함.</p>
+</section>
+
+<section>
+  <h2>7. 실행 가드레일 파이프라인 <span class="tag">AgoraAgent가 시그널 실행 시 통과하는 검사</span></h2>
+  <p style="font-size:13px; color:var(--text-muted-light);">FE가 "왜 이 거래가 거부됐는지" 활동 로그에 보여주려면 이 순서와 에러코드를 알아야 함.</p>
+  <ol class="flow">
+    <li>Deadline 확인 <span class="err">E_DEADLINE_EXPIRED</span></li>
+    <li>AgoraAgent 권한 확인 <span class="err">E_NOT_AGORA_AGENT</span></li>
+    <li>Agent 상태 (ACTIVE/REDUCE_ONLY/PAUSED) <span class="err">E_AGORA_AGENT_INACTIVE, E_BUY_DISABLED_IN_REDUCE_ONLY</span></li>
+    <li>시그널 위험도 확인 (BUY만) <span class="err">E_RISK_SCORE_EXCEEDED, E_INVALID_RISK_SCORE</span></li>
+    <li>Pool 허용 목록 확인 <span class="err">E_POOL_NOT_ALLOWED</span></li>
+    <li>시그널 중복 확인 <span class="err">E_DUPLICATE_SIGNAL</span></li>
+    <li>시그널 TTL / 거래 가능 시간대 <span class="err">E_SIGNAL_EXPIRED, E_OUTSIDE_TRADING_HOURS</span></li>
+    <li>시그널가 vs 실제 DEX 견적가 편차 <span class="err">E_PRICE_DEVIATION_EXCEEDED</span></li>
+    <li>1회/epoch 한도, 일일 볼륨, 포지션 상한 <span class="err">E_TRADE_LIMIT_EXCEEDED 등</span></li>
+    <li>잔액 확인 <span class="err">E_INSUFFICIENT_BALANCE</span></li>
+    <li>DEX 스왑 실행 (DeepBook 또는 Mock)</li>
+    <li>최소 수령량 확인 <span class="err">E_MIN_OUTPUT_NOT_MET</span></li>
+    <li>누적 실현손실 한도 확인 <span class="err">E_MAX_LOSS_EXCEEDED</span></li>
+    <li>성공 시에만 한도 사용량 갱신 + <span class="mono">OrderExecuted</span>/<span class="mono">DeepBookOrderExecuted</span> 이벤트 발생</li>
+  </ol>
+  <p class="note">하나라도 실패하면 트랜잭션 전체가 롤백됨 — 잔액/한도/replay 상태 그대로 유지. "부분 실패" 상태는 존재하지 않음.</p>
+</section>
+
+<section>
+  <h2>8. 온체인 이벤트 <span class="tag">활동 피드 / 알림에 그대로 매핑</span></h2>
+  <table>
+    <tr><th>이벤트</th><th>발생 시점</th><th>주요 필드</th></tr>
+    <tr><td class="mono">OrderExecuted</td><td>Mock DEX 거래 체결</td><td>vault_id, signal_id, side, 체결량, 가격</td></tr>
+    <tr><td class="mono">DeepBookOrderExecuted</td><td>실제 DeepBook 거래 체결</td><td>vault_id, user, signal_id, side, requested_input, consumed_input(부분체결 시 &lt; requested), actual_output, signal_price_e9, dex_quote_price_e9, pool, risk_score_bps, executed_at_ms</td></tr>
+    <tr><td class="mono">KillSwitchTriggered</td><td>급락 감지로 자동 정지</td><td>vault_id, window_loss_amount, max_window_loss_amount, triggered_at_ms</td></tr>
+    <tr><td class="mono">EmergencyLiquidated</td><td>전량 청산 실행</td><td>vault_id, owner, crypto_sold, fiat_received, realized_loss, pool</td></tr>
+    <tr><td class="mono">EmergencyFiatWithdrawn</td><td>정지+회수 실행</td><td>vault_id, owner, fiat_withdrawn, crypto_left_in_vault</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>9. FE용 JS SDK <span class="tag">sui-contract/sources/Dex/Vault_Dex.js</span></h2>
+  <p>진웅이 이미 Sui Transaction Block(PTB) 빌더 함수를 만들어 뒀음 — FE는 이 함수들을 그대로 import해서 <code>@mysten/dapp-kit</code> 지갑 서명과 연결하면 됨. 직접 Move call을 조립할 필요 없음.</p>
+  <div class="card">
+    <ul class="compact" style="columns:2; column-gap:24px;">
+      <li class="badge-fn">buildCreateVaultTransaction</li>
+      <li class="badge-fn">buildDepositMoreTransaction</li>
+      <li class="badge-fn">buildWithdrawAllTransaction</li>
+      <li class="badge-fn">buildWithdrawAmountTransaction</li>
+      <li class="badge-fn">buildWithdrawCryptoAmountTransaction</li>
+      <li class="badge-fn">buildRevokeAgentTransaction</li>
+      <li class="badge-fn">buildReactivateAgentTransaction</li>
+      <li class="badge-fn">buildReplaceAgentTransaction</li>
+      <li class="badge-fn">buildUpdateTradeLimitTransaction</li>
+      <li class="badge-fn">buildUpdateEpochTradeLimitTransaction</li>
+      <li class="badge-fn">buildConfigureExecutionPolicyTransaction</li>
+      <li class="badge-fn">buildExecuteBuyTransaction</li>
+      <li class="badge-fn">buildExecuteSellTransaction</li>
+      <li class="badge-fn">buildDeepBookExecuteBuyTransaction</li>
+      <li class="badge-fn">buildDeepBookExecuteSellTransaction</li>
+      <li class="badge-fn">buildEmergencyPauseAndWithdrawFiatTransaction</li>
+      <li class="badge-fn">buildDeepBookEmergencyLiquidateAllTransaction</li>
+      <li class="badge-fn">executeVaultTransaction</li>
+    </ul>
+  </div>
+  <p class="note">이 파일에서 <code>PACKAGE_ID</code>, <code>AGORA_FIAT_COIN_TYPE</code>, <code>AGORA_CRYPTO_COIN_TYPE</code>, <code>AGORA_AGENT_OPERATOR</code> 상수도 export됨 — 값이 §3의 .env.example과 일치하는지 확인 필요.</p>
+</section>
+
+<section>
+  <h2>10. 아직 없는 것 — FE가 mock으로 채워야 할 구간</h2>
+  <div class="callout">
+    <ul class="compact" style="margin:0;">
+      <li><b>Providing Agent 서버</b> — 시그널 수집, backtest, shadow trading, Trust Score 산출. 전혀 없음. FE 리더보드/에이전트 카드는 지금처럼 mock 데이터로 계속 가는 게 맞음.</li>
+      <li><b>위험도(risk_score_bps) 산출 공식</b> — BE와 합의 전. 컨트랙트는 상한 비교만 하고 계산 로직 자체가 없음.</li>
+      <li><b>Agora↔Providing Agent x402 연결</b> — 미구현.</li>
+      <li><b>실행 레코드 DB</b> (signal ID, payment digest, trade digest 등 이력 저장) — 없음. FE 활동 피드는 당분간 온체인 이벤트 직접 구독으로 대체하거나 mock.</li>
+      <li><b>AgoraAgent 운영 키/KMS</b> — 미정. 즉, 지금 시점엔 실제 자동 거래 실행을 시연할 운영 주체가 없음 (수동/테스트 트리거만 가능).</li>
+    </ul>
+  </div>
+  <p class="note">→ 결론: <b>Vault 입출금/조회/긴급탈출 UI는 지금 바로 실제 컨트랙트에 연결해서 만들 수 있고</b>, <b>리더보드/시그널/Trust Score/활동 로그는 당분간 mock 데이터 위에서 UI만 완성</b>해두는 게 현재 백엔드 상황에 맞는 순서.</p>
+</section>
+
+<section>
+  <h2>11. 다음 통합 체크포인트 (진웅 PROGRESS.md §10 기준)</h2>
+  <ol class="flow">
+    <li>DeepBook Testnet E2E (Pool 확정 → BUY 1건 → SELL 1건)</li>
+    <li>BE와 인터페이스 동결 — signal_id 생성 규칙, risk_score_bps 산출식, DEEP 수수료 조달</li>
+    <li><b>FE와 인터페이스 동결</b> — DeepBookOrderExecuted 이벤트 필드, Vault 조회 스키마 (이 부분은 본인이 참여해야 함)</li>
+    <li>3파트 통합 리허설</li>
+  </ol>
+</section>
+
+<div class="footer">
+  출처: TheZoneAgora/contract PROGRESS.md, investment_vault.move, deepbook_executor.move, order_executor.move, Vault_Dex.js, Published.toml, .env.example · TheZoneAgora 카톡방 (8/2 팀 분담, 8/4~8/5 볼트 UX 결정) · design/design.md 브랜드 시스템
+</div>
+
+</div>
+</body>
+</html>

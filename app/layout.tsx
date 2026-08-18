@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Onest, DM_Mono } from "next/font/google";
+import "@mysten/dapp-kit/dist/index.css";
 import "./globals.css";
+import { Providers } from "./providers";
+import { AppHeader } from "@/components/AppHeader";
 
 // Distinctive display + clean UI + tabular mono numerics.
 const display = Bricolage_Grotesque({
@@ -42,8 +45,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
-      <body>{children}</body>
+    <html lang="ko" className={`${display.variable} ${sans.variable} ${mono.variable}`}>
+      <body>
+        <Providers>
+          <AppHeader />
+          {children}
+        </Providers>
+      </body>
     </html>
   );
 }

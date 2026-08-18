@@ -1,29 +1,44 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { UTCTimestamp } from "lightweight-charts";
+import type { IChartApi, ISeriesApi, UTCTimestamp } from "lightweight-charts";
 import type { AgentSnapshot } from "@/lib/types/snapshot";
 import { STRATEGY_META } from "@/lib/strategyMeta";
+
+// lightweight-charts requires unix timestamps; we map dayIndex → epoch seconds
+// starting from a fixed base so the x-axis is stable.
+const BASE_TS = 1748736000; // 2026-06-01 00:00:00 UTC in seconds
+const DAY_S = 86400;
+const REF_SERIES_KEY = "__ref__";
 
 export function EquityCurveChart({ agents }: { agents: AgentSnapshot[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const chartRef = useRef<IChartApi | null>(null);
+  const seriesRef = useRef<Map<string, ISeriesApi<"Line">>>(new Map());
+  const hasFitRef = useRef(false);
+  const [chartReady, setChartReady] = useState(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Create the chart once. Data is applied separately so live ticks update
+  // series in place instead of tearing down the whole chart (no zoom/pan reset).
   useEffect(() => {
     if (!mounted || !containerRef.current) return;
 
-    let chart: ReturnType<typeof import("lightweight-charts")["createChart"]> | null = null;
+    let disposed = false;
+    let ro: ResizeObserver | null = null;
+    // useRef 초기값 Map은 재할당되지 않으므로 cleanup용으로 미리 캡처해 둔다.
+    const series = seriesRef.current;
 
     async function init() {
       const { createChart, ColorType, LineStyle } = await import("lightweight-charts");
       const el = containerRef.current;
-      if (!el) return;
+      if (!el || disposed) return;
 
-      chart = createChart(el, {
+      const chart = createChart(el, {
         width: el.clientWidth,
         height: el.clientHeight,
         layout: {
@@ -60,36 +75,6 @@ export function EquityCurveChart({ agents }: { agents: AgentSnapshot[] }) {
         handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: false },
       });
 
-      // Add one line series per agent using day index on the x-axis.
-      // lightweight-charts requires unix timestamps; we map dayIndex → epoch seconds
-      // starting from a fixed base so the x-axis is stable.
-      const BASE_TS = 1748736000; // 2026-06-01 00:00:00 UTC in seconds
-      const DAY_S = 86400;
-
-      for (const snap of agents) {
-        const meta = STRATEGY_META[snap.agent.strategyType];
-        const series = chart.addLineSeries({
-          color: snap.agent.color || meta.color,
-          lineWidth: snap.agent.isReal ? 2 : 2,
-          title: snap.agent.name,
-          crosshairMarkerVisible: true,
-          crosshairMarkerRadius: 5,
-          crosshairMarkerBorderColor: snap.agent.color || meta.color,
-          crosshairMarkerBackgroundColor: "#0b0f19",
-          lastValueVisible: true,
-          priceLineVisible: false,
-          // lineType: 0, // Solid (default)
-        });
-
-        const data = snap.curve.map((p) => ({
-          time: (BASE_TS + p.dayIndex * DAY_S) as UTCTimestamp,
-          value: p.equity,
-        }));
-
-        series.setData(data);
-      }
-
-      // Reference line at $10,000
       const refSeries = chart.addLineSeries({
         color: "rgba(255,255,255,0.12)",
         lineWidth: 1,
@@ -99,33 +84,80 @@ export function EquityCurveChart({ agents }: { agents: AgentSnapshot[] }) {
         lastValueVisible: false,
         priceLineVisible: false,
       });
-      refSeries.setData([
-        { time: BASE_TS as UTCTimestamp, value: 10000 },
-        {
-          time: (BASE_TS + (agents[0]?.curve.length - 1) * DAY_S) as UTCTimestamp,
-          value: 10000,
-        },
-      ]);
+      series.set(REF_SERIES_KEY, refSeries);
 
-      chart.timeScale().fitContent();
+      chartRef.current = chart;
+      setChartReady((n) => n + 1);
 
-      const ro = new ResizeObserver(() => {
-        if (el && chart) {
-          chart.applyOptions({ width: el.clientWidth });
+      ro = new ResizeObserver(() => {
+        if (el && chartRef.current) {
+          chartRef.current.applyOptions({ width: el.clientWidth });
         }
       });
       ro.observe(el);
-
-      return () => ro.disconnect();
     }
 
-    const cleanup = init();
+    void init();
 
     return () => {
-      cleanup.then((fn) => fn?.());
-      chart?.remove();
+      disposed = true;
+      ro?.disconnect();
+      chartRef.current?.remove();
+      chartRef.current = null;
+      series.clear();
+      hasFitRef.current = false;
     };
-  }, [mounted, agents]);
+  }, [mounted]);
+
+  // Apply/update series data whenever the (possibly live-merged) agent
+  // snapshots change — creates series lazily, otherwise just calls setData.
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    for (const snap of agents) {
+      const meta = STRATEGY_META[snap.agent.strategyType];
+      let series = seriesRef.current.get(snap.agent.id);
+      if (!series) {
+        series = chart.addLineSeries({
+          color: snap.agent.color || meta.color,
+          lineWidth: 2,
+          title: snap.agent.name,
+          crosshairMarkerVisible: true,
+          crosshairMarkerRadius: 5,
+          crosshairMarkerBorderColor: snap.agent.color || meta.color,
+          crosshairMarkerBackgroundColor: "#0b0f19",
+          lastValueVisible: true,
+          priceLineVisible: false,
+        });
+        seriesRef.current.set(snap.agent.id, series);
+      }
+      series.setData(
+        snap.curve.map((p) => ({
+          time: (BASE_TS + p.dayIndex * DAY_S) as UTCTimestamp,
+          value: p.equity,
+        }))
+      );
+    }
+
+    const refSeries = seriesRef.current.get(REF_SERIES_KEY);
+    const longestCurveLength = Math.max(0, ...agents.map((a) => a.curve.length));
+    if (refSeries && longestCurveLength > 0) {
+      refSeries.setData([
+        { time: BASE_TS as UTCTimestamp, value: 10000 },
+        {
+          time: (BASE_TS + (longestCurveLength - 1) * DAY_S) as UTCTimestamp,
+          value: 10000,
+        },
+      ]);
+    }
+
+    if (!hasFitRef.current) {
+      chart.timeScale().fitContent();
+      hasFitRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agents, chartReady]);
 
   return (
     <section className="glass-strong relative overflow-hidden rounded-xl3 shadow-hero">
@@ -139,10 +171,10 @@ export function EquityCurveChart({ agents }: { agents: AgentSnapshot[] }) {
       <header className="relative flex flex-wrap items-end justify-between gap-3 border-b border-line/60 px-5 pb-4 pt-5 sm:px-6">
         <div>
           <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
-            Performance History
+            성과 히스토리
           </div>
           <h2 className="mt-1 font-display text-xl font-bold tracking-tight text-white sm:text-2xl">
-            Equity Curves
+            자산 곡선
           </h2>
         </div>
 
@@ -163,19 +195,20 @@ export function EquityCurveChart({ agents }: { agents: AgentSnapshot[] }) {
       <div className="relative px-0 py-0">
         {!mounted && (
           <div className="flex h-[360px] items-center justify-center text-muted text-sm">
-            Loading chart…
+            차트 불러오는 중…
           </div>
         )}
         <div
           ref={containerRef}
           className="h-[360px] w-full"
-          aria-label="Equity curves for all agents over the season"
+          aria-label="시즌 전체 에이전트 자산 곡선"
         />
       </div>
 
       <footer className="border-t border-line/40 px-5 py-3 text-[11px] text-muted sm:px-6">
-        X-axis: day index from season start (D-0 = June 1, 2026). Y-axis: portfolio equity.
-        Dashed line = $10,000 baseline. Thicker line = MINT (live agent).
+        가로축: 시즌 시작일 기준 경과일(D-0 = 2026년 6월 1일). 세로축: 포트폴리오 자산.
+        점선 = $10,000 기준선. 굵은 선 = MINT(실거래 데이터). 각 곡선의 끝부분은
+        실시간 시세 틱으로 계속 연장됩니다.
       </footer>
     </section>
   );

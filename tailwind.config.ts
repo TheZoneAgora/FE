@@ -22,6 +22,19 @@ const config: Config = {
         good: "#22c55e",
         warn: "#f59e0b",
         bad: "#ef4444",
+
+        // THE ZONE AGORA brand system (design/design.md) — used by vault UI + app shell.
+        "agora-orange": "#FF5A1F",
+        "arena-black": "#11100F",
+        "warm-ivory": "#FFF8ED",
+        "surface-dark": "#1B1917",
+        "surface-light": "#F4EDE3",
+        "muted-dark": "#8D857B",
+        "muted-light": "#B9B0A5",
+        positive: "#24C77A",
+        negative: "#F04F5F",
+        warning: "#F6B73C",
+        "neutral-data": "#7F8A99",
       },
       fontFamily: {
         display: ["var(--font-display)", "ui-sans-serif", "system-ui"],

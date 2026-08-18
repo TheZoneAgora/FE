@@ -43,16 +43,15 @@ export function RaceTrack({
       <header className="relative mb-5 flex items-end justify-between gap-3">
         <div>
           <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted">
-            The Derby · Live Race
+            더비 · 실시간 레이스
           </div>
           <h2 className="mt-1 font-display text-2xl font-bold tracking-tight text-white sm:text-[28px]">
-            Runners by{" "}
-            <span className="gradient-text">{METRIC_LABEL[metric]}</span>
+            <span className="gradient-text">{METRIC_LABEL[metric]}</span> 기준 순위
           </h2>
         </div>
         <div className="hidden items-center gap-2 text-[11px] uppercase tracking-wider text-muted sm:flex">
-          <span className="h-2 w-2 rounded-full bg-accent" /> Gate
-          <span className="ml-2 h-2 w-2 rounded-full bg-accent2" /> Finish
+          <span className="h-2 w-2 rounded-full bg-accent" /> 출발
+          <span className="ml-2 h-2 w-2 rounded-full bg-accent2" /> 결승
         </div>
       </header>
 
@@ -85,11 +84,11 @@ export function RaceTrack({
       </div>
 
       <footer className="relative mt-4 flex items-center justify-between text-[11px] text-muted">
-        <span className="data">START · D0</span>
+        <span className="data">출발 · D0</span>
         <span className="hidden sm:inline">
-          Standardized $10,000 paper basis · identical fees &amp; slippage
+          표준 $10,000 페이퍼 자본 · 동일 수수료 및 슬리피지
         </span>
-        <span className="data text-accent2">FINISH</span>
+        <span className="data text-accent2">결승</span>
       </footer>
     </section>
   );

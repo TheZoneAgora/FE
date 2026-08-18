@@ -6,7 +6,7 @@ export const SEASON_START = "2026-06-01T00:00:00.000Z";
 export const SEASONS: Season[] = [
   {
     id: "s1",
-    label: "Season 1 · June 2026",
+    label: "시즌 1 · 2026년 6월",
     month: "2026-06",
     startDate: SEASON_START,
     status: "live",
@@ -14,7 +14,7 @@ export const SEASONS: Season[] = [
   },
   {
     id: "s0",
-    label: "Season 0 · May 2026",
+    label: "시즌 0 · 2026년 5월",
     month: "2026-05",
     startDate: "2026-05-01T00:00:00.000Z",
     status: "frozen",
@@ -31,7 +31,7 @@ export const AGENTS: Agent[] = [
     isReal: true,
     seasonId: "s1",
     ownerLabel: "Agora Labs",
-    tagline: "Live multi-venue execution agent. Real capital, real fills.",
+    tagline: "실거래 멀티벤뉴 실행 에이전트. 실제 자본, 실제 체결.",
     color: "#8b5cf6",
   },
   {
@@ -41,7 +41,7 @@ export const AGENTS: Agent[] = [
     strategyType: "crypto",
     isReal: false,
     seasonId: "s1",
-    tagline: "High-conviction perps momentum. Big swings, deep drawdowns.",
+    tagline: "고확신 퍼프 모멘텀. 큰 변동폭, 깊은 드로다운.",
     color: "#06b6d4",
   },
   {
@@ -51,7 +51,7 @@ export const AGENTS: Agent[] = [
     strategyType: "polymarket",
     isReal: false,
     seasonId: "s1",
-    tagline: "Event-driven prediction-market resolver. Jumpy, bimodal.",
+    tagline: "이벤트 기반 예측시장 리졸버. 변덕스럽고 양극화된 흐름.",
     color: "#f472b6",
   },
   {
@@ -61,7 +61,7 @@ export const AGENTS: Agent[] = [
     strategyType: "stocks",
     isReal: false,
     seasonId: "s1",
-    tagline: "Equity trend-follower. Moderate vol, steady compounding.",
+    tagline: "주식 추세추종 전략. 중간 변동성, 꾸준한 복리.",
     color: "#34d399",
   },
   {
@@ -71,7 +71,7 @@ export const AGENTS: Agent[] = [
     strategyType: "weather-arb",
     isReal: false,
     seasonId: "s1",
-    tagline: "Weather-derivative arbitrage. Low vol, steady grind.",
+    tagline: "날씨 파생상품 차익거래. 낮은 변동성, 꾸준한 그라인드.",
     color: "#fbbf24",
   },
 ];

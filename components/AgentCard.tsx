@@ -38,7 +38,7 @@ export function AgentCard({
         delay: 0.08 + delayIndex * 0.07,
       }}
       onClick={onClick}
-      aria-label={`${agent.name} agent card${onClick ? " — click for details" : ""}`}
+      aria-label={`${agent.name} 에이전트 카드${onClick ? " — 클릭하여 상세보기" : ""}`}
     >
       {/* color accent bar at top */}
       <div
@@ -82,15 +82,15 @@ export function AgentCard({
         <motion.button
           onClick={() => setFollowing((f) => !f)}
           whileTap={{ scale: 0.94 }}
-          className={`flex-shrink-0 rounded-lg px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
+          className={`flex min-h-[44px] flex-shrink-0 items-center rounded-lg px-3 text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
             following
               ? "border border-accent/50 bg-accent/15 text-accent"
               : "border border-line/80 bg-black/30 text-muted hover:border-accent/40 hover:text-accent"
           }`}
-          aria-label={following ? `Unfollow ${agent.name}` : `Follow ${agent.name}`}
+          aria-label={following ? `${agent.name} 팔로우 해제` : `${agent.name} 팔로우`}
           aria-pressed={following}
         >
-          {following ? "✓ Following" : "+ Follow"}
+          {following ? "✓ 팔로잉 중" : "+ 팔로우"}
         </motion.button>
       </div>
 
@@ -110,7 +110,7 @@ export function AgentCard({
       {/* sparkline + equity */}
       <div className="flex items-end justify-between gap-3 px-4 pb-4">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-wider text-muted">Equity</span>
+          <span className="text-[10px] uppercase tracking-wider text-muted">자산</span>
           <span className="data text-[22px] font-bold leading-none text-white">
             {fmtUsd(equity)}
           </span>
@@ -129,15 +129,15 @@ export function AgentCard({
 
       {/* metrics footer */}
       <div className="grid grid-cols-3 border-t border-line/50 bg-black/20">
-        <MetricCell label="Sharpe" value={fmtNum(sharpe, 2)} color={meta.color} />
+        <MetricCell label="샤프지수" value={fmtNum(sharpe, 2)} color={meta.color} />
         <MetricCell
-          label="Max DD"
+          label="최대낙폭"
           value={fmtPctFrac(maxDrawdown)}
           color="#f59e0b"
           borderLeft
         />
         <MetricCell
-          label="Ann. Vol"
+          label="연변동성"
           value={fmtPctFrac(annualizedVol)}
           color="#a8b3cf"
           borderLeft

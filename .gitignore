@@ -35,3 +35,6 @@ yarn-error.log*
 /.omc/state/
 /.omc/logs/
 /.omc/research/
+/.omc/sessions/
+/.omc/artifacts/
+/.omc/project-memory.json

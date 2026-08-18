@@ -56,7 +56,7 @@ export function MintDetailPanel({
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", stiffness: 300, damping: 32 }}
-        aria-label="MINT detail panel"
+        aria-label="MINT 상세 패널"
       >
         {/* ── Header ────────────────────────────────────────────── */}
         <div
@@ -78,13 +78,13 @@ export function MintDetailPanel({
                   LIVE
                 </span>
               </div>
-              <p className="text-[11px] text-muted">OKX Paper · Kalshi Weather · Season 1 Real Data</p>
+              <p className="text-[11px] text-muted">OKX 페이퍼 · Kalshi 날씨 · 시즌 1 실데이터</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg border border-line/60 p-2 text-muted transition hover:border-accent/40 hover:text-white"
-            aria-label="Close panel"
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-line/60 text-muted transition hover:border-accent/40 hover:text-white"
+            aria-label="패널 닫기"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -95,16 +95,16 @@ export function MintDetailPanel({
         {/* ── Scrollable Body ────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
           {/* ── OKX Portfolio Summary ────────────────────────────── */}
-          <Section title="OKX Portfolio" subtitle="paper10 · 10 strategies · Season 1">
+          <Section title="OKX 포트폴리오" subtitle="paper10 · 전략 10개 · 시즌 1">
             <div className="grid grid-cols-3 gap-3">
-              <StatCard label="Equity" value={fmtUsd(data.equityCurve[data.equityCurve.length - 1].equity)} accent="#8b5cf6" />
+              <StatCard label="자산" value={fmtUsd(data.equityCurve[data.equityCurve.length - 1].equity)} accent="#8b5cf6" />
               <StatCard
-                label="Season ROI"
+                label="시즌 ROI"
                 value={fmtPct(data.equityCurve[data.equityCurve.length - 1].roiPct)}
                 accent={data.equityCurve[data.equityCurve.length - 1].roiPct >= 0 ? "#34d399" : "#f87171"}
               />
               <StatCard
-                label="Trades (S1)"
+                label="거래 수 (S1)"
                 value={String(data.strategySnapshots.reduce((s, x) => s + x.season1Trades, 0))}
                 accent="#06b6d4"
               />
@@ -112,16 +112,16 @@ export function MintDetailPanel({
           </Section>
 
           {/* ── Per-Strategy Breakdown ─────────────────────────── */}
-          <Section title="Strategy Breakdown" subtitle="ranked by Season 1 ROI">
+          <Section title="전략별 성과" subtitle="시즌 1 ROI 순">
             <div className="overflow-x-auto">
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="border-b border-line/40 text-left text-[10px] uppercase tracking-wider text-muted">
-                    <th className="pb-2 pr-3">Strategy</th>
-                    <th className="pb-2 pr-3 text-right">Equity</th>
+                    <th className="pb-2 pr-3">전략</th>
+                    <th className="pb-2 pr-3 text-right">자산</th>
                     <th className="pb-2 pr-3 text-right">S1 ROI</th>
-                    <th className="pb-2 pr-3 text-right">Trades</th>
-                    <th className="pb-2 text-right">Win%</th>
+                    <th className="pb-2 pr-3 text-right">거래</th>
+                    <th className="pb-2 text-right">승률</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line/20">
@@ -134,7 +134,7 @@ export function MintDetailPanel({
           </Section>
 
           {/* ── Recent Trades ─────────────────────────────────── */}
-          <Section title="Recent Trades" subtitle={`last ${data.recentTrades.length} closes · Season 1`}>
+          <Section title="최근 거래" subtitle={`최근 청산 ${data.recentTrades.length}건 · 시즌 1`}>
             <div className="space-y-1.5">
               {data.recentTrades.map((t, i) => (
                 <TradeRow key={i} trade={t} />
@@ -143,16 +143,16 @@ export function MintDetailPanel({
           </Section>
 
           {/* ── Kalshi Weather ───────────────────────────────── */}
-          <Section title="Kalshi Weather" subtitle="temperature prediction markets">
+          <Section title="Kalshi 날씨" subtitle="기온 예측 시장">
             <div className="mb-3 grid grid-cols-4 gap-3">
-              <StatCard label="Win Rate" value={`${data.kalshiSummary.win_rate}%`} accent="#fbbf24" />
+              <StatCard label="승률" value={`${data.kalshiSummary.win_rate}%`} accent="#fbbf24" />
               <StatCard
-                label="Total PnL"
+                label="총 손익"
                 value={fmtUsd(data.kalshiSummary.total_pnl)}
                 accent={data.kalshiSummary.total_pnl >= 0 ? "#34d399" : "#f87171"}
               />
               <StatCard label="ROI" value={`${data.kalshiSummary.roi_pct}%`} accent="#a78bfa" />
-              <StatCard label="Avg Edge" value={`${data.kalshiSummary.avg_edge_pct}%`} accent="#06b6d4" />
+              <StatCard label="평균 엣지" value={`${data.kalshiSummary.avg_edge_pct}%`} accent="#06b6d4" />
             </div>
             <div className="space-y-1.5">
               {data.kalshiRecentTrades.map((t) => (
@@ -163,7 +163,7 @@ export function MintDetailPanel({
 
           {/* ── Footer ──────────────────────────────────────── */}
           <div className="px-6 pb-8 pt-2 text-[10px] text-muted/60">
-            Data snapshot: {genDate}. Paper trading only — no real capital at risk.
+            데이터 스냅샷: {genDate}. 페이퍼 트레이딩 전용 — 실제 자본 리스크 없음.
           </div>
         </div>
       </motion.aside>
@@ -268,7 +268,7 @@ function TradeRow({ trade }: { trade: MintTrade }) {
 
       {/* side */}
       <span className={`w-10 flex-shrink-0 text-[10px] font-bold uppercase ${trade.side === "long" ? "text-good" : "text-bad"}`}>
-        {trade.side}
+        {trade.side === "long" ? "롱" : "숏"}
       </span>
 
       {/* partial badge */}
@@ -303,7 +303,7 @@ function KalshiTradeRow({ trade }: { trade: MintKalshiTrade }) {
   const outcomeColor = isPending ? "#fbbf24" : isWin ? "#34d399" : "#f87171";
   const resolvedStr = trade.resolved_at
     ? new Date(trade.resolved_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-    : "pending";
+    : "대기중";
 
   return (
     <div className="flex items-center gap-2 rounded-lg border border-line/30 bg-white/[0.02] px-3 py-2 text-[11px]">
@@ -314,14 +314,14 @@ function KalshiTradeRow({ trade }: { trade: MintKalshiTrade }) {
       <span className="flex-1 truncate text-ink">{trade.short_title.replace(/^[A-Z]+ /, "")}</span>
 
       {/* edge */}
-      <span className="text-muted/60 hidden sm:block">edge: {(trade.edge * 100).toFixed(0)}%</span>
+      <span className="text-muted/60 hidden sm:block">엣지: {(trade.edge * 100).toFixed(0)}%</span>
 
       {/* bet */}
       <span className="text-muted">${trade.bet_amount.toFixed(0)}</span>
 
       {/* pnl */}
       <span className="w-16 flex-shrink-0 text-right font-mono font-bold" style={{ color: outcomeColor }}>
-        {isPending ? "open" : (trade.pnl >= 0 ? "+" : "") + fmtUsd(trade.pnl)}
+        {isPending ? "진행중" : (trade.pnl >= 0 ? "+" : "") + fmtUsd(trade.pnl)}
       </span>
 
       {/* resolved */}
