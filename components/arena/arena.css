@@ -6,7 +6,31 @@
  * 옮겼다. 키프레임 중 흔한 이름(pulse/zoom/rot 등)은 `ar-` 접두사를 붙였다.
  * 캐릭터의 bob/run 애니메이션은 globals.css의 agora-char-bob/agora-char-run을
  * 그대로 쓰므로(components/arena/characters.tsx) 여기서는 재정의하지 않는다.
+ *
+ * 지갑 연결 모달(.overlay/.modal/.w-opt/.w-skip)은 헤더에서 앱 전체에 걸쳐(모든
+ * 라우트) 렌더되어야 해서, `.agora-arena`가 주는 레이아웃 부수효과(배경/min-height)
+ * 없이 색 변수만 필요하다. 그래서 이 변수들은 :root에도 선언하고, 모달 관련 규칙은
+ * `.agora-arena` 조상 없이도 동작하도록 스코프를 뺐다.
  */
+
+:root {
+  --orange: #ff5a1f;
+  --black: #11100f;
+  --ivory: #fff8ed;
+  --sd: #1b1917;
+  --sd2: #242019;
+  --line: #2c2823;
+  --line2: #241f1a;
+  --mut: #b9b0a5;
+  --mut2: #8d857b;
+  --pos: #24c77a;
+  --neg: #f04f5f;
+  --warn: #f6b73c;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --disp: var(--font-display), "Inter Tight", sans-serif;
+  --body: var(--font-sans), "Inter", sans-serif;
+}
 
 .agora-arena {
   --orange: #ff5a1f;
@@ -870,7 +894,9 @@ body.agora-locked {
 }
 
 /* ============ modal / sheet base ============ */
-.agora-arena .overlay {
+/* .overlay는 DetailSheet(agora-arena 내부)와 WalletConnect 지갑 모달(전역, 헤더 등
+   agora-arena 바깥에서도 렌더) 둘 다 공유하므로 조상 스코프 없이 정의한다. */
+.overlay {
   position: fixed;
   inset: 0;
   z-index: 90;
@@ -880,7 +906,7 @@ body.agora-locked {
   pointer-events: none;
   transition: opacity 0.3s var(--ease);
 }
-.agora-arena .overlay.on {
+.overlay.on {
   opacity: 1;
   pointer-events: auto;
 }
@@ -934,7 +960,7 @@ body.agora-locked {
 }
 
 /* ============ wallet modal ============ */
-.agora-arena .modal {
+.modal {
   position: fixed;
   z-index: 110;
   left: 50%;
@@ -949,21 +975,21 @@ body.agora-locked {
   pointer-events: none;
   transition: opacity 0.28s var(--ease), transform 0.28s var(--spring);
 }
-.agora-arena .modal.on {
+.modal.on {
   opacity: 1;
   pointer-events: auto;
   transform: translate(-50%, -50%) scale(1);
 }
-.agora-arena .modal h3 {
+.modal h3 {
   font: 700 1.2rem var(--disp);
   margin-bottom: 6px;
 }
-.agora-arena .modal .sub {
+.modal .sub {
   font-size: 0.82rem;
   color: var(--mut2);
   margin-bottom: 20px;
 }
-.agora-arena .w-opt {
+.w-opt {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -980,28 +1006,28 @@ body.agora-locked {
   opacity: 0;
   transform: translateY(10px);
 }
-.agora-arena .modal.on .w-opt {
+.modal.on .w-opt {
   opacity: 1;
   transform: none;
   transition: opacity 0.4s var(--ease), transform 0.4s var(--ease), border-color 0.15s;
 }
-.agora-arena .modal.on .w-opt:nth-child(3) {
+.modal.on .w-opt:nth-child(3) {
   transition-delay: 0.06s;
 }
-.agora-arena .modal.on .w-opt:nth-child(4) {
+.modal.on .w-opt:nth-child(4) {
   transition-delay: 0.12s;
 }
-.agora-arena .modal.on .w-opt:nth-child(5) {
+.modal.on .w-opt:nth-child(5) {
   transition-delay: 0.18s;
 }
-.agora-arena .w-opt:hover {
+.w-opt:hover {
   border-color: var(--orange);
 }
-.agora-arena .w-opt:disabled {
+.w-opt:disabled {
   opacity: 0.6;
   cursor: default;
 }
-.agora-arena .w-opt .wi {
+.w-opt .wi {
   width: 36px;
   height: 36px;
   border-radius: 10px;
@@ -1011,12 +1037,12 @@ body.agora-locked {
   font-size: 1.1rem;
   flex-shrink: 0;
 }
-.agora-arena .w-opt small {
+.w-opt small {
   margin-left: auto;
   font: 600 0.68rem var(--body);
   color: var(--mut2);
 }
-.agora-arena .w-skip {
+.w-skip {
   display: block;
   margin: 14px auto 0;
   background: none;
@@ -1026,7 +1052,7 @@ body.agora-locked {
   cursor: pointer;
   padding: 10px;
 }
-.agora-arena .w-skip:hover {
+.w-skip:hover {
   color: var(--ivory);
 }
 

@@ -14,6 +14,7 @@ import {
   useDisconnectWallet,
   useWallets,
 } from "@mysten/dapp-kit";
+import "@/components/arena/arena.css";
 
 interface WalletConnectContextValue {
   connected: boolean;
@@ -94,6 +95,11 @@ export function WalletConnectProvider({ children }: { children: React.ReactNode 
       }}
     >
       {children}
+      {/*
+        헤더/온보딩/위임 등 앱 전체(모든 라우트)에서 렌더되므로 `.agora-arena` 레이아웃
+        스코프에 기대지 않는다 — 필요한 CSS 변수는 arena.css의 :root에, .overlay/.modal/
+        .w-opt/.w-skip 규칙도 조상 클래스 없이 전역으로 정의돼 있다.
+      */}
       <div className={`overlay${open ? " on" : ""}`} onClick={handleSkip} />
       <div className={`modal${open ? " on" : ""}`} role="dialog" aria-modal="true">
         <h3>지갑 연결</h3>

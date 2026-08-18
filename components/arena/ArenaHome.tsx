@@ -12,7 +12,7 @@ import { TrustSection } from "@/components/arena/TrustSection";
 import { DetailSheet } from "@/components/arena/DetailSheet";
 import { MyPositionBar, type MyPosition } from "@/components/arena/MyPositionBar";
 import { ToastProvider, useToast } from "@/components/arena/Toast";
-import { WalletConnectProvider, useWalletConnect } from "@/components/arena/WalletConnect";
+import { useWalletConnect } from "@/components/arena/WalletConnect";
 import { useArenaAgents, type ArenaAgent } from "@/components/arena/useArenaAgents";
 import { useCountUp } from "@/components/arena/useCountUp";
 import { usePrefersReducedMotion } from "@/components/arena/useReducedMotion";
@@ -218,11 +218,11 @@ function ArenaHomeInner() {
 }
 
 export function ArenaHome() {
+  // WalletConnectProvider는 app/providers.tsx에서 앱 전역으로 이미 장착돼 있다
+  // (헤더 등 모든 라우트가 같은 지갑 모달을 공유해야 하므로).
   return (
-    <WalletConnectProvider>
-      <ToastProvider>
-        <ArenaHomeInner />
-      </ToastProvider>
-    </WalletConnectProvider>
+    <ToastProvider>
+      <ArenaHomeInner />
+    </ToastProvider>
   );
 }
