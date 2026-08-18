@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { CharacterRow } from "@/components/vault/CharacterRow";
 
 export function CompleteScreen() {
   return (
@@ -10,6 +11,7 @@ export function CompleteScreen() {
       transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="flex flex-col items-center gap-5 rounded-[24px] border border-white/10 bg-surface-dark px-8 py-16 text-center"
     >
+      <CharacterRow size={56} />
       <motion.div
         initial={{ scale: 0.6, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

@@ -1,0 +1,1517 @@
+/*
+ * design/agora-arena.html CSS 포팅.
+ * 클래스명은 원본 그대로 유지하되, 전역 태그 선택자(body/html/header 등)는
+ * 앱 전체 레이아웃과 충돌하지 않도록 `.agora-arena` 스코프(또는 `.ar-header`
+ * 전용 클래스, AppHeader에도 `agora-arena` 클래스를 부여해 CSS 변수를 공유)로
+ * 옮겼다. 키프레임 중 흔한 이름(pulse/zoom/rot 등)은 `ar-` 접두사를 붙였다.
+ * 캐릭터의 bob/run 애니메이션은 globals.css의 agora-char-bob/agora-char-run을
+ * 그대로 쓰므로(components/arena/characters.tsx) 여기서는 재정의하지 않는다.
+ */
+
+.agora-arena {
+  --orange: #ff5a1f;
+  --black: #11100f;
+  --ivory: #fff8ed;
+  --sd: #1b1917;
+  --sd2: #242019;
+  --line: #2c2823;
+  --line2: #241f1a;
+  --mut: #b9b0a5;
+  --mut2: #8d857b;
+  --pos: #24c77a;
+  --neg: #f04f5f;
+  --warn: #f6b73c;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --disp: var(--font-display), "Inter Tight", sans-serif;
+  --body: var(--font-sans), "Inter", sans-serif;
+
+  background: var(--black);
+  color: var(--ivory);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+.agora-arena *,
+.ar-header * {
+  box-sizing: border-box;
+}
+.agora-arena .num {
+  font-variant-numeric: tabular-nums;
+}
+.agora-arena button {
+  font-family: var(--body);
+}
+.agora-arena .wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+@media (min-width: 760px) {
+  .agora-arena .wrap {
+    padding: 0 32px;
+  }
+}
+.agora-arena ::selection {
+  background: var(--orange);
+  color: var(--black);
+}
+body.agora-locked {
+  overflow: hidden;
+}
+
+/* ============ header (AppHeader.tsx 전용) ============ */
+.ar-header {
+  --orange: #ff5a1f;
+  --black: #11100f;
+  --ivory: #fff8ed;
+  --sd: #1b1917;
+  --sd2: #242019;
+  --line: #2c2823;
+  --line2: #241f1a;
+  --mut: #b9b0a5;
+  --mut2: #8d857b;
+  --pos: #24c77a;
+  --neg: #f04f5f;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --disp: var(--font-display), "Inter Tight", sans-serif;
+  --body: var(--font-sans), "Inter", sans-serif;
+
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(17, 16, 15, 0.85);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line2);
+  color: var(--ivory);
+  font-family: var(--body);
+}
+.ar-header .wrap {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  gap: 12px;
+}
+@media (min-width: 760px) {
+  .ar-header .wrap {
+    padding: 0 32px;
+  }
+}
+.agora-arena .brand,
+.ar-header .brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  cursor: pointer;
+}
+.agora-arena .brand svg,
+.ar-header .brand svg {
+  width: 26px;
+  height: 26px;
+}
+.agora-arena .wordmark,
+.ar-header .wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  white-space: nowrap;
+}
+.agora-arena .wordmark .z,
+.ar-header .wordmark .z {
+  font: 600 0.62rem var(--body);
+  letter-spacing: 0.18em;
+  color: var(--mut2);
+}
+.agora-arena .wordmark .a,
+.ar-header .wordmark .a {
+  font: 700 0.95rem var(--disp);
+  letter-spacing: 0.02em;
+}
+@media (max-width: 520px) {
+  .agora-arena .wordmark .z,
+  .ar-header .wordmark .z {
+    display: none;
+  }
+}
+.ar-header .hd-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.agora-arena .season-chip,
+.ar-header .season-chip {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font: 600 0.7rem var(--body);
+  letter-spacing: 0.1em;
+  color: var(--mut);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 7px 13px;
+}
+@media (min-width: 680px) {
+  .agora-arena .season-chip,
+  .ar-header .season-chip {
+    display: inline-flex;
+  }
+}
+.agora-arena .season-chip i,
+.ar-header .season-chip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pos);
+  animation: ar-pulse 2s ease-in-out infinite;
+}
+@keyframes ar-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.75);
+  }
+}
+
+.agora-arena .btn,
+.ar-header .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 18px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font: 700 0.86rem var(--body);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    transform 0.18s var(--ease),
+    filter 0.18s,
+    border-color 0.18s,
+    background 0.18s,
+    color 0.18s;
+}
+.agora-arena .btn:active,
+.ar-header .btn:active {
+  transform: scale(0.97);
+}
+.agora-arena .btn.primary,
+.ar-header .btn.primary {
+  background: var(--orange);
+  color: var(--black);
+}
+.agora-arena .btn.primary:hover,
+.ar-header .btn.primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+.agora-arena .btn.ghost,
+.ar-header .btn.ghost {
+  background: transparent;
+  color: var(--ivory);
+  border-color: var(--line);
+}
+.agora-arena .btn.ghost:hover,
+.ar-header .btn.ghost:hover {
+  border-color: var(--mut2);
+}
+.agora-arena .btn.big {
+  min-height: 52px;
+  padding: 12px 26px;
+  font-size: 0.98rem;
+  border-radius: 14px;
+}
+.agora-arena .btn:disabled,
+.ar-header .btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.agora-arena .wallet-chip,
+.ar-header .wallet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: 600 0.8rem var(--body);
+  cursor: pointer;
+  transition: border-color 0.18s;
+  background: transparent;
+  color: var(--ivory);
+}
+.agora-arena .wallet-chip:hover,
+.ar-header .wallet-chip:hover {
+  border-color: var(--mut2);
+}
+.agora-arena .wallet-chip .dot,
+.ar-header .wallet-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pos);
+}
+.agora-arena .wallet-chip .bal,
+.ar-header .wallet-chip .bal {
+  color: var(--mut2);
+}
+@media (max-width: 520px) {
+  .agora-arena .wallet-chip .bal,
+  .ar-header .wallet-chip .bal {
+    display: none;
+  }
+}
+
+/* ============ ticker ============ */
+.agora-arena .ticker {
+  border-bottom: 1px solid var(--line2);
+  background: var(--sd);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+.agora-arena .ticker .wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+.agora-arena .ticker .tk-label {
+  font: 700 0.64rem var(--body);
+  letter-spacing: 0.14em;
+  color: var(--orange);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.agora-arena .ticker .tk-label i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--orange);
+  animation: ar-pulse 2s infinite;
+}
+.agora-arena .tk-stage {
+  position: relative;
+  flex: 1;
+  height: 40px;
+  overflow: hidden;
+}
+.agora-arena .tk-item {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  font: 500 0.82rem var(--body);
+  color: var(--mut);
+  white-space: nowrap;
+  transform: translateY(100%);
+  opacity: 0;
+}
+.agora-arena .tk-item.in {
+  transform: none;
+  opacity: 1;
+  transition:
+    transform 0.5s var(--ease),
+    opacity 0.5s;
+}
+.agora-arena .tk-item.out {
+  transform: translateY(-100%);
+  opacity: 0;
+  transition:
+    transform 0.5s var(--ease),
+    opacity 0.5s;
+}
+.agora-arena .tk-item b {
+  color: var(--ivory);
+  font-weight: 700;
+}
+.agora-arena .tk-item .up {
+  color: var(--pos);
+  font-weight: 700;
+}
+.agora-arena .tk-item .dn {
+  color: var(--neg);
+  font-weight: 700;
+}
+
+/* ============ hero + race ============ */
+.agora-arena .hero {
+  padding: 56px 0 30px;
+}
+@media (max-width: 700px) {
+  .agora-arena .hero {
+    padding: 36px 0 20px;
+  }
+}
+.agora-arena .hero-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+.agora-arena .eyebrow {
+  font: 700 0.7rem var(--body);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.agora-arena .eyebrow::before {
+  content: "";
+  width: 20px;
+  height: 2px;
+  background: var(--orange);
+}
+.agora-arena h1 {
+  font: 700 clamp(2rem, 5.2vw, 3.2rem) var(--disp);
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+.agora-arena h1 .accent {
+  color: var(--orange);
+}
+.agora-arena .hero-sub {
+  color: var(--mut);
+  margin-top: 14px;
+  max-width: 520px;
+  font-size: 1rem;
+}
+.agora-arena .hero-kpis {
+  display: flex;
+  gap: 26px;
+  flex-wrap: wrap;
+}
+.agora-arena .kpi .v {
+  font: 700 1.45rem var(--disp);
+  letter-spacing: -0.02em;
+}
+.agora-arena .kpi .v em {
+  font-style: normal;
+  color: var(--orange);
+}
+.agora-arena .kpi .k {
+  font: 500 0.72rem var(--body);
+  color: var(--mut2);
+  margin-top: 2px;
+}
+
+/* race track */
+.agora-arena .track {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--sd);
+  padding: 22px 0 18px;
+  overflow: hidden;
+}
+.agora-arena .track::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(12.5% - 1px),
+    var(--line2) calc(12.5% - 1px) 12.5%
+  );
+  opacity: 0.5;
+  pointer-events: none;
+}
+.agora-arena .finish {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 8.5%;
+  width: 14px;
+  background: repeating-conic-gradient(var(--line) 0% 25%, transparent 0% 50%) 0 0 / 8px 8px;
+  opacity: 0.45;
+}
+.agora-arena .finish-label {
+  position: absolute;
+  top: 10px;
+  right: calc(8.5% + 24px);
+  font: 700 0.62rem var(--body);
+  letter-spacing: 0.14em;
+  color: var(--mut2);
+}
+.agora-arena .lane {
+  position: relative;
+  height: 86px;
+  border-bottom: 1px dashed var(--line2);
+}
+.agora-arena .lane:last-child {
+  border-bottom: none;
+}
+@media (max-width: 700px) {
+  .agora-arena .lane {
+    height: 72px;
+  }
+}
+.agora-arena .racer {
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: left 1.6s var(--ease);
+  cursor: pointer;
+  z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+.agora-arena .racer .char {
+  width: 58px;
+  height: 58px;
+  position: relative;
+  transition: transform 0.4s var(--spring);
+}
+@media (max-width: 700px) {
+  .agora-arena .racer .char {
+    width: 46px;
+    height: 46px;
+  }
+}
+.agora-arena .racer:hover .char {
+  transform: scale(1.12);
+}
+.agora-arena .racer .char svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.agora-arena .racer .nm {
+  font: 700 0.66rem var(--body);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  background: var(--black);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 2px 9px;
+}
+.agora-arena .racer .rt {
+  font: 700 0.68rem var(--body);
+  white-space: nowrap;
+}
+.agora-arena .racer .rt.up {
+  color: var(--pos);
+}
+.agora-arena .racer .rt.dn {
+  color: var(--neg);
+}
+.agora-arena .speed {
+  position: absolute;
+  right: 100%;
+  top: 38%;
+  width: 26px;
+  height: 14px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.agora-arena .racer.running .speed {
+  opacity: 0.8;
+}
+.agora-arena .speed span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--mut2);
+  margin: 3px 0;
+  transform-origin: right;
+}
+.agora-arena .speed span:nth-child(1) {
+  width: 100%;
+  animation: ar-zoom 0.5s linear infinite;
+}
+.agora-arena .speed span:nth-child(2) {
+  width: 65%;
+  animation: ar-zoom 0.5s 0.12s linear infinite;
+}
+@keyframes ar-zoom {
+  from {
+    transform: scaleX(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scaleX(0.2);
+    opacity: 0;
+  }
+}
+.agora-arena .rankbadge {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sd2);
+  border: 1px solid var(--line);
+  color: var(--mut);
+  font: 800 0.66rem var(--body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.4s var(--spring);
+  z-index: 3;
+}
+.agora-arena .racer.lead .rankbadge {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--black);
+  transform: scale(1.15);
+}
+.agora-arena .racer.lead .nm {
+  border-color: rgba(255, 90, 31, 0.6);
+}
+.agora-arena .lane-glow {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.8s;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 60%, rgba(255, 90, 31, 0.05));
+}
+.agora-arena .lane.leadlane .lane-glow {
+  opacity: 1;
+}
+
+.agora-arena .track-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.agora-arena .track-foot .hint {
+  font: 500 0.78rem var(--body);
+  color: var(--mut2);
+}
+.agora-arena .track-foot .hint b {
+  color: var(--mut);
+}
+
+/* ============ sections ============ */
+.agora-arena .ar-section {
+  padding: 64px 0;
+}
+.agora-arena .sec-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+.agora-arena .sec-title {
+  font: 700 clamp(1.4rem, 3vw, 1.9rem) var(--disp);
+  letter-spacing: -0.02em;
+}
+.agora-arena .sec-note {
+  font: 500 0.8rem var(--body);
+  color: var(--mut2);
+}
+.agora-arena .sec-note b {
+  color: var(--orange);
+}
+
+/* ============ leaderboard ============ */
+.agora-arena .lb {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.agora-arena .lb-row {
+  display: grid;
+  grid-template-columns: 44px 64px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  background: var(--sd);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px 18px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 0.2s var(--ease),
+    transform 0.2s var(--ease),
+    box-shadow 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.agora-arena .lb-row:hover {
+  border-color: var(--mut2);
+  transform: translateY(-2px);
+}
+.agora-arena .lb-row.first {
+  border-color: rgba(255, 90, 31, 0.5);
+}
+.agora-arena .lb-row.first::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--orange);
+}
+.agora-arena .lb-rank {
+  font: 800 1.15rem var(--disp);
+  color: var(--mut2);
+  text-align: center;
+}
+.agora-arena .lb-row.first .lb-rank {
+  color: var(--orange);
+}
+.agora-arena .lb-rank .delta {
+  display: block;
+  font: 700 0.6rem var(--body);
+}
+.agora-arena .delta.up {
+  color: var(--pos);
+}
+.agora-arena .delta.dn {
+  color: var(--neg);
+}
+.agora-arena .delta.flat {
+  color: var(--mut2);
+}
+.agora-arena .lb-char {
+  width: 56px;
+  height: 56px;
+}
+.agora-arena .lb-char svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.agora-arena .lb-main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.agora-arena .lb-id {
+  min-width: 130px;
+}
+.agora-arena .lb-name {
+  font: 800 1rem var(--disp);
+  letter-spacing: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.agora-arena .tag {
+  font: 700 0.58rem var(--body);
+  letter-spacing: 0.08em;
+  padding: 2.5px 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  color: var(--mut2);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.agora-arena .tag.real {
+  border-color: rgba(36, 199, 122, 0.45);
+  color: var(--pos);
+}
+.agora-arena .lb-strat {
+  font: 500 0.74rem var(--body);
+  color: var(--mut2);
+  margin-top: 3px;
+}
+.agora-arena .lb-spark {
+  width: 120px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.agora-arena .lb-stats {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+}
+.agora-arena .lst .v {
+  font: 700 0.95rem var(--body);
+}
+.agora-arena .lst .v.up {
+  color: var(--pos);
+}
+.agora-arena .lst .v.dn {
+  color: var(--neg);
+}
+.agora-arena .lst .k {
+  font: 500 0.64rem var(--body);
+  color: var(--mut2);
+  letter-spacing: 0.04em;
+  margin-top: 1px;
+}
+.agora-arena .scorering {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+}
+.agora-arena .scorering svg {
+  transform: rotate(-90deg);
+}
+.agora-arena .scorering .sv {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 800 0.82rem var(--body);
+}
+.agora-arena .lb-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.agora-arena .backers {
+  font: 600 0.72rem var(--body);
+  color: var(--mut2);
+  white-space: nowrap;
+}
+.agora-arena .backers b {
+  color: var(--ivory);
+}
+@media (max-width: 900px) {
+  .agora-arena .lb-row {
+    grid-template-columns: 34px 52px 1fr;
+    grid-template-rows: auto auto;
+  }
+  .agora-arena .lb-char {
+    width: 48px;
+    height: 48px;
+  }
+  .agora-arena .lb-cta {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line2);
+  }
+  .agora-arena .lb-spark {
+    display: none;
+  }
+}
+@media (max-width: 560px) {
+  .agora-arena .lb-stats {
+    gap: 14px;
+  }
+  .agora-arena .lst .v {
+    font-size: 0.86rem;
+  }
+}
+
+/* ============ trust strip ============ */
+.agora-arena .trust {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+@media (min-width: 760px) {
+  .agora-arena .trust {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.agora-arena .tr-item {
+  background: var(--sd);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.agora-arena .tr-item .ti {
+  width: 34px;
+  height: 34px;
+  color: var(--orange);
+}
+.agora-arena .tr-item h3 {
+  font: 700 1rem var(--disp);
+}
+.agora-arena .tr-item p {
+  font-size: 0.84rem;
+  color: var(--mut);
+}
+.agora-arena .tr-item p b {
+  color: var(--ivory);
+}
+
+/* ============ modal / sheet base ============ */
+.agora-arena .overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(10, 9, 8, 0.7);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease);
+}
+.agora-arena .overlay.on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.agora-arena .sheet {
+  position: fixed;
+  z-index: 100;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, 105%);
+  width: min(860px, 100%);
+  max-height: 92dvh;
+  overflow-y: auto;
+  background: var(--sd);
+  border: 1px solid var(--line);
+  border-bottom: none;
+  border-radius: 28px 28px 0 0;
+  padding: 26px 22px 34px;
+  transition: transform 0.5s var(--ease);
+}
+.agora-arena .sheet.on {
+  transform: translate(-50%, 0);
+}
+@media (min-width: 760px) {
+  .agora-arena .sheet {
+    padding: 34px 38px 42px;
+  }
+}
+.agora-arena .sheet-grab {
+  width: 44px;
+  height: 5px;
+  border-radius: 5px;
+  background: var(--line);
+  margin: 0 auto 20px;
+}
+.agora-arena .sheet-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--sd2);
+  border: 1px solid var(--line);
+  color: var(--mut);
+  font-size: 1rem;
+  cursor: pointer;
+}
+.agora-arena .sheet-close:hover {
+  color: var(--ivory);
+}
+
+/* ============ agent detail ============ */
+.agora-arena .dt-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.agora-arena .dt-char {
+  width: 92px;
+  height: 92px;
+  flex-shrink: 0;
+}
+.agora-arena .dt-char svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.agora-arena .dt-name {
+  font: 800 1.7rem var(--disp);
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.agora-arena .dt-strat {
+  color: var(--mut2);
+  font-size: 0.88rem;
+  margin-top: 3px;
+}
+.agora-arena .dt-rank {
+  margin-left: auto;
+  text-align: right;
+}
+.agora-arena .dt-rank .r {
+  font: 800 2rem var(--disp);
+  color: var(--orange);
+}
+.agora-arena .dt-rank .k {
+  font: 600 0.68rem var(--body);
+  color: var(--mut2);
+  letter-spacing: 0.1em;
+}
+
+.agora-arena .dt-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--line2);
+  border: 1px solid var(--line2);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 22px;
+}
+@media (min-width: 640px) {
+  .agora-arena .dt-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.agora-arena .dst {
+  background: var(--sd2);
+  padding: 14px 16px;
+}
+.agora-arena .dst .v {
+  font: 700 1.15rem var(--body);
+}
+.agora-arena .dst .v.up {
+  color: var(--pos);
+}
+.agora-arena .dst .v.dn {
+  color: var(--neg);
+}
+.agora-arena .dst .k {
+  font: 500 0.68rem var(--body);
+  color: var(--mut2);
+  margin-top: 2px;
+}
+
+.agora-arena .equity {
+  margin-top: 22px;
+  background: var(--black);
+  border: 1px solid var(--line2);
+  border-radius: 16px;
+  padding: 18px;
+}
+.agora-arena .equity h4 {
+  font: 600 0.7rem var(--body);
+  letter-spacing: 0.12em;
+  color: var(--mut2);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+.agora-arena .equity svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.agora-arena .safety {
+  margin-top: 22px;
+  border: 1px solid rgba(36, 199, 122, 0.25);
+  background: rgba(36, 199, 122, 0.05);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+.agora-arena .safety h4 {
+  font: 700 0.74rem var(--body);
+  letter-spacing: 0.12em;
+  color: var(--pos);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.agora-arena .safety ul {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+@media (min-width: 640px) {
+  .agora-arena .safety ul {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.agora-arena .safety li {
+  font: 500 0.82rem var(--body);
+  color: var(--mut);
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.agora-arena .safety li b {
+  color: var(--ivory);
+}
+.agora-arena .safety li::before {
+  content: "✓";
+  color: var(--pos);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* delegate */
+.agora-arena .delegate {
+  margin-top: 22px;
+}
+.agora-arena .delegate h4 {
+  font: 700 0.95rem var(--disp);
+  margin-bottom: 14px;
+}
+.agora-arena .amount-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.agora-arena .amount-display {
+  font: 800 2rem var(--disp);
+  letter-spacing: -0.02em;
+  min-width: 190px;
+}
+.agora-arena .amount-display small {
+  font: 600 0.85rem var(--body);
+  color: var(--mut2);
+}
+.agora-arena .chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.agora-arena .chip-btn {
+  font: 700 0.78rem var(--body);
+  padding: 8px 14px;
+  border-radius: 20px;
+  min-height: 38px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--mut);
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+}
+.agora-arena .chip-btn:hover {
+  color: var(--ivory);
+  border-color: var(--mut2);
+}
+.agora-arena .chip-btn.on {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: rgba(255, 90, 31, 0.08);
+}
+.agora-arena input[type="range"] {
+  width: 100%;
+  margin: 18px 0 6px;
+  appearance: none;
+  height: 6px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--orange) var(--fill, 10%), var(--line) var(--fill, 10%));
+  outline: none;
+  cursor: pointer;
+}
+.agora-arena input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ivory);
+  border: 6px solid var(--orange);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s var(--spring);
+}
+.agora-arena input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+.agora-arena .dg-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.agora-arena .dg-meta .m {
+  font: 500 0.76rem var(--body);
+  color: var(--mut2);
+}
+.agora-arena .dg-meta .m b {
+  color: var(--ivory);
+  font-weight: 700;
+}
+.agora-arena .dg-cta {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.agora-arena .dg-cta .btn {
+  flex: 1;
+  min-width: 220px;
+}
+.agora-arena .dg-note {
+  font: 500 0.72rem var(--body);
+  color: var(--mut2);
+}
+
+/* spinner */
+.agora-arena .spin,
+.ar-header .spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(17, 16, 15, 0.3);
+  border-top-color: var(--black);
+  animation: ar-rot 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes ar-rot {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============ my position ============ */
+.agora-arena .mypos {
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  bottom: 16px;
+  transform: translate(-50%, 140%);
+  width: min(560px, calc(100% - 24px));
+  background: var(--sd);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  transition: transform 0.55s var(--spring);
+}
+.agora-arena .mypos.on {
+  transform: translate(-50%, 0);
+}
+.agora-arena .mypos .pc {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.agora-arena .mypos .pc svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.agora-arena .mypos .pi {
+  min-width: 0;
+  flex: 1;
+}
+.agora-arena .mypos .pn {
+  font: 800 0.88rem var(--disp);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.agora-arena .mypos .pk {
+  font: 500 0.7rem var(--body);
+  color: var(--mut2);
+}
+.agora-arena .mypos .pv {
+  text-align: right;
+}
+.agora-arena .mypos .pnl {
+  font: 800 1.05rem var(--body);
+}
+.agora-arena .mypos .pnl.up {
+  color: var(--pos);
+}
+.agora-arena .mypos .pnl.dn {
+  color: var(--neg);
+}
+.agora-arena .mypos .pw {
+  font: 600 0.68rem var(--body);
+  color: var(--mut2);
+}
+.agora-arena .mypos .px {
+  background: none;
+  border: none;
+  color: var(--mut2);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 8px;
+}
+
+/* ============ toast ============ */
+.agora-arena .toast {
+  position: fixed;
+  z-index: 120;
+  left: 50%;
+  top: 80px;
+  transform: translate(-50%, -24px);
+  background: var(--ivory);
+  color: var(--black);
+  font: 700 0.84rem var(--body);
+  padding: 12px 20px;
+  border-radius: 14px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.3s var(--ease),
+    transform 0.4s var(--spring);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  max-width: calc(100% - 32px);
+  text-align: center;
+}
+.agora-arena .toast.on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ============ onboarding ============ */
+.agora-arena .onb {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--black);
+  display: flex;
+  flex-direction: column;
+  transition:
+    opacity 0.5s var(--ease),
+    visibility 0.5s;
+}
+.agora-arena .onb.off {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.agora-arena .onb-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+}
+.agora-arena .onb-dots {
+  display: flex;
+  gap: 8px;
+}
+.agora-arena .onb-dots i {
+  width: 24px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--line);
+  display: block;
+  transition:
+    background 0.3s,
+    width 0.3s var(--ease);
+}
+.agora-arena .onb-dots i.on {
+  background: var(--orange);
+  width: 36px;
+}
+.agora-arena .onb-skip {
+  background: none;
+  border: none;
+  color: var(--mut2);
+  font: 600 0.84rem var(--body);
+  cursor: pointer;
+  padding: 10px 14px;
+}
+.agora-arena .onb-skip:hover {
+  color: var(--ivory);
+}
+.agora-arena .onb-stage {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+.agora-arena .onb-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  opacity: 0;
+  transform: translateX(60px);
+  pointer-events: none;
+  transition:
+    opacity 0.5s var(--ease),
+    transform 0.6s var(--ease);
+  overflow-y: auto;
+}
+.agora-arena .onb-panel.on {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.agora-arena .onb-panel.past {
+  transform: translateX(-60px);
+}
+.agora-arena .onb-mark {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 32px;
+}
+.agora-arena .onb-mark svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.agora-arena .onb-mark .agentL {
+  animation: ar-oEnterL 1s var(--ease) 0.2s both;
+}
+.agora-arena .onb-mark .agentR {
+  animation: ar-oEnterR 1s var(--ease) 0.2s both;
+}
+@keyframes ar-oEnterL {
+  from {
+    opacity: 0;
+    transform: translateX(-44px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ar-oEnterR {
+  from {
+    opacity: 0;
+    transform: translateX(44px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.agora-arena .onb h2 {
+  font: 800 clamp(1.7rem, 5vw, 2.6rem) var(--disp);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  max-width: 600px;
+}
+.agora-arena .onb h2 .accent {
+  color: var(--orange);
+}
+.agora-arena .onb .sub {
+  color: var(--mut);
+  margin-top: 16px;
+  max-width: 440px;
+  font-size: 0.98rem;
+}
+.agora-arena .onb-cta {
+  margin-top: 36px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.agora-arena .onb-rules {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 34px;
+  width: min(560px, 100%);
+}
+.agora-arena .onb-rule {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+  background: var(--sd);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  opacity: 0;
+  transform: translateY(14px);
+}
+.agora-arena .onb-panel.on .onb-rule {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.5s var(--ease),
+    transform 0.5s var(--ease);
+}
+.agora-arena .onb-panel.on .onb-rule:nth-child(1) {
+  transition-delay: 0.15s;
+}
+.agora-arena .onb-panel.on .onb-rule:nth-child(2) {
+  transition-delay: 0.3s;
+}
+.agora-arena .onb-panel.on .onb-rule:nth-child(3) {
+  transition-delay: 0.45s;
+}
+.agora-arena .onb-rule .n {
+  font: 800 0.95rem var(--disp);
+  color: var(--orange);
+  flex-shrink: 0;
+}
+.agora-arena .onb-rule h5 {
+  font: 700 0.92rem var(--body);
+}
+.agora-arena .onb-rule p {
+  font: 500 0.78rem var(--body);
+  color: var(--mut2);
+}
+.agora-arena .onb-chars {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 28px;
+}
+.agora-arena .onb-chars .oc {
+  width: 64px;
+  height: 64px;
+}
+.agora-arena .onb-chars .oc svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+@media (max-width: 560px) {
+  .agora-arena .onb-chars .oc {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* ============ footer ============ */
+.agora-arena footer {
+  border-top: 1px solid var(--line2);
+  padding: 44px 0 72px;
+  text-align: center;
+}
+.agora-arena footer p {
+  color: var(--mut2);
+  font-size: 0.78rem;
+  margin-top: 12px;
+}
+.agora-arena footer .fm {
+  width: 26px;
+  height: 26px;
+  margin: 0 auto;
+}

@@ -7,6 +7,7 @@ import { BalanceCards } from "@/components/vault/BalanceCards";
 import { VaultPerformance } from "@/components/vault/VaultPerformance";
 import { ActivityFeed } from "@/components/vault/ActivityFeed";
 import { ActionBar } from "@/components/vault/ActionBar";
+import { CharacterRow } from "@/components/vault/CharacterRow";
 
 export default function VaultPage() {
   const { owner, vault, hasVault, loading, activity, actions } = useVault();
@@ -61,19 +62,25 @@ export default function VaultPage() {
     <main className="min-h-[calc(100vh-64px)] bg-arena-black">
       <div className="mx-auto max-w-[1200px] px-5 py-10 lg:px-6">
         {vault.isGuest && (
-          <div className="mb-6 rounded-2xl border border-agora-orange/30 bg-agora-orange/10 px-4 py-3 text-[13px] font-medium text-agora-orange">
-            데모 볼트 — 지갑을 연결하면 내 볼트를 만들 수 있어요
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-agora-orange/30 bg-agora-orange/10 px-4 py-3">
+            <p className="text-[13px] font-medium text-agora-orange">
+              데모 볼트 — 지갑을 연결하면 내 볼트를 만들 수 있어요
+            </p>
+            <CharacterRow size={40} className="hidden sm:flex" />
           </div>
         )}
 
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-light">
-              {vault.isGuest ? "데모 볼트" : "내 볼트"}
+        <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <CharacterRow size={56} className="hidden md:flex" />
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-light">
+                {vault.isGuest ? "데모 볼트" : "내 볼트"}
+              </div>
+              <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-warm-ivory">
+                볼트 대시보드
+              </h1>
             </div>
-            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-warm-ivory">
-              볼트 대시보드
-            </h1>
           </div>
           <AgentStatusBadge status={vault.agentStatus} />
         </header>

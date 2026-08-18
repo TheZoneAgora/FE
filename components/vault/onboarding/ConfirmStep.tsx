@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { DEFAULT_RISK_POLICY } from "@/lib/vault/types";
+import { AgentCharacter } from "@/components/arena/characters";
 import { formatUsdcDisplay } from "./onboardingFormat";
 
 const POLICY_ROWS = [
@@ -40,9 +41,12 @@ export function ConfirmStep({
       transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
       className="rounded-[24px] border border-white/10 bg-surface-dark px-8 py-10"
     >
-      <h1 className="font-display text-xl font-bold tracking-tight text-warm-ivory">
-        내용을 확인해 주세요
-      </h1>
+      <div className="flex items-center gap-3">
+        <AgentCharacter agentId="mint" size={48} />
+        <h1 className="font-display text-xl font-bold tracking-tight text-warm-ivory">
+          내용을 확인해 주세요
+        </h1>
+      </div>
 
       <div className="mt-6 flex items-center justify-between rounded-[16px] border border-white/10 bg-arena-black px-5 py-4">
         <span className="text-[13px] font-medium text-muted-light">
@@ -53,25 +57,30 @@ export function ConfirmStep({
         </span>
       </div>
 
-      <div className="mt-4 rounded-[16px] border border-white/10 bg-arena-black px-5 py-4">
+      <div className="mt-4">
         <div className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-light">
           기본 리스크 정책
         </div>
-        <ul className="mt-3 flex flex-col gap-2.5">
-          {POLICY_ROWS.map((row) => (
-            <li
+        <div className="mt-3 flex flex-col gap-2.5">
+          {POLICY_ROWS.map((row, i) => (
+            <div
               key={row.label}
-              className="flex items-center justify-between gap-4"
+              className="flex items-start gap-3.5 rounded-[16px] border border-white/10 bg-arena-black px-4 py-3.5"
             >
-              <span className="text-[13px] text-muted-light">
-                {row.label}
+              <span className="flex-shrink-0 font-display text-[15px] font-extrabold text-agora-orange">
+                {String(i + 1).padStart(2, "0")}
               </span>
-              <span className="font-mono text-[13px] font-medium tabular-nums text-warm-ivory">
-                {row.value}
-              </span>
-            </li>
+              <div className="min-w-0 flex-1">
+                <h5 className="text-[13px] font-semibold text-warm-ivory">
+                  {row.label}
+                </h5>
+                <p className="mt-0.5 font-mono text-[13px] tabular-nums text-muted-light">
+                  {row.value}
+                </p>
+              </div>
+            </div>
           ))}
-        </ul>
+        </div>
         <p className="mt-4 text-[12px] leading-relaxed text-muted-light">
           리스크 설정에서 언제든 조정할 수 있습니다.
         </p>

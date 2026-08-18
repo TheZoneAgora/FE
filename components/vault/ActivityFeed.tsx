@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { VaultActivityEvent, VaultActivityEventType } from "@/lib/vault/types";
 import { formatRelativeTime, formatSui, formatUsdc } from "@/components/vault/format";
+import { AgentCharacter } from "@/components/arena/characters";
 
 type Tone = "neutral" | "positive" | "negative";
 
@@ -187,6 +188,10 @@ export function ActivityFeed({ activity }: { activity: VaultActivityEvent[] }) {
               {activity.map((event) => {
                 const meta = EVENT_META[event.type];
                 const detail = describeEvent(event);
+                const agentId =
+                  typeof (event.payload as Record<string, unknown>).agentId === "string"
+                    ? ((event.payload as Record<string, unknown>).agentId as string)
+                    : undefined;
                 return (
                   <motion.li
                     key={event.id}
@@ -197,8 +202,16 @@ export function ActivityFeed({ activity }: { activity: VaultActivityEvent[] }) {
                     transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                     className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 ${TONE_CARD[meta.tone]}`}
                   >
-                    <span className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg bg-black/20">
-                      <ToneIcon type={event.type} tone={meta.tone} />
+                    <span
+                      className={`flex flex-shrink-0 items-center justify-center rounded-lg bg-black/20 ${
+                        agentId ? "mt-0 h-8 w-8" : "mt-0.5 h-6 w-6"
+                      }`}
+                    >
+                      {agentId ? (
+                        <AgentCharacter agentId={agentId} size={30} bob={false} />
+                      ) : (
+                        <ToneIcon type={event.type} tone={meta.tone} />
+                      )}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
