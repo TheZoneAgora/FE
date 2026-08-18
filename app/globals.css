@@ -106,3 +106,18 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ===== Agora Arena 캐릭터 애니메이션 (design/agora-arena.html 포팅) ===== */
+@keyframes agora-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes agora-run {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-5px) rotate(2deg); }
+}
+.agora-char-bob { animation: agora-bob 2.4s ease-in-out infinite; }
+.agora-char-run { animation: agora-run 0.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .agora-char-bob, .agora-char-run { animation: none; }
+}
