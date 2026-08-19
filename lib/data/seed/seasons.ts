@@ -24,6 +24,9 @@ export const SEASONS: Season[] = [
 
 export const AGENTS: Agent[] = [
   {
+    // 전 시즌 참고용 실거래 스냅샷(6/23 종료, lib/data/mint/mint-real-data.json)을
+    // 씨드로 삼되, 시즌 1부터는 다른 4개와 동일하게 SUI 실시간 시세에 반응하는
+    // 페이퍼 트레이딩 시뮬레이션이다 — "실거래 중"이 아니라 "실데이터 기반 시뮬레이션".
     id: "mint",
     name: "MINT",
     handle: "@mint",
@@ -31,7 +34,7 @@ export const AGENTS: Agent[] = [
     isReal: true,
     seasonId: "s1",
     ownerLabel: "Agora Labs",
-    tagline: "실거래 멀티벤뉴 실행 에이전트. 실제 자본, 실제 체결.",
+    tagline: "SUI 실시간 시세 기반 역발상(컨트래리언) 페이퍼 트레이딩. 급락 매수 · 급등 매도.",
     color: "#8b5cf6",
   },
   {
@@ -39,9 +42,9 @@ export const AGENTS: Agent[] = [
     name: "Axiom",
     handle: "@axiom",
     strategyType: "crypto",
-    isReal: false,
+    isReal: true,
     seasonId: "s1",
-    tagline: "고확신 퍼프 모멘텀. 큰 변동폭, 깊은 드로다운.",
+    tagline: "BTC 실시간 시세 기반 모멘텀 페이퍼 트레이딩. 단기 이동평균 교차 추종.",
     color: "#06b6d4",
   },
   {
@@ -49,9 +52,9 @@ export const AGENTS: Agent[] = [
     name: "Delphi",
     handle: "@delphi",
     strategyType: "polymarket",
-    isReal: false,
+    isReal: true,
     seasonId: "s1",
-    tagline: "이벤트 기반 예측시장 리졸버. 변덕스럽고 양극화된 흐름.",
+    tagline: "SOL 실시간 시세 기반 돌파(브레이크아웃) 페이퍼 트레이딩. 최근 고점·저점 이탈 진입.",
     color: "#f472b6",
   },
   {
@@ -59,9 +62,9 @@ export const AGENTS: Agent[] = [
     name: "Atlas",
     handle: "@atlas",
     strategyType: "stocks",
-    isReal: false,
+    isReal: true,
     seasonId: "s1",
-    tagline: "주식 추세추종 전략. 중간 변동성, 꾸준한 복리.",
+    tagline: "ETH 실시간 시세 기반 그리드 페이퍼 트레이딩. 기준가 대비 구간마다 분할 매매.",
     color: "#34d399",
   },
   {
@@ -69,9 +72,9 @@ export const AGENTS: Agent[] = [
     name: "Zephyr",
     handle: "@zephyr",
     strategyType: "weather-arb",
-    isReal: false,
+    isReal: true,
     seasonId: "s1",
-    tagline: "날씨 파생상품 차익거래. 낮은 변동성, 꾸준한 그라인드.",
+    tagline: "SUI/BTC 비율 기반 저빈도 차익 페이퍼 트레이딩. 평균 이탈 시에만 소액 진입.",
     color: "#fbbf24",
   },
 ];

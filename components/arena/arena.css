@@ -424,6 +424,39 @@ body.agora-locked {
   max-width: 520px;
   font-size: 1rem;
 }
+.agora-arena .hero-sub.top-earner {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 7px 13px;
+  max-width: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mut);
+  background: var(--sd);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+.agora-arena .hero-sub.top-earner b {
+  color: var(--ivory);
+}
+.agora-arena .hero-sub.top-earner .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pos);
+  flex-shrink: 0;
+  animation: ar-pulse 2s ease-in-out infinite;
+}
+.agora-arena .hero-sub.top-earner .up {
+  color: var(--pos);
+  font-weight: 700;
+}
+.agora-arena .hero-sub.top-earner .dn {
+  color: var(--neg);
+  font-weight: 700;
+}
 .agora-arena .hero-kpis {
   display: flex;
   gap: 26px;

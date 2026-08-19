@@ -160,12 +160,7 @@ export function DetailSheet({
             </div>
             <div>
               <div className="dt-name">
-                {agent.name}{" "}
-                {agent.real ? (
-                  <span className="tag real">REAL · Mac mini에서 실거래 중</span>
-                ) : (
-                  <span className="tag">SIMULATED</span>
-                )}
+                {agent.name} <span className="tag real">{agent.symbol} 실시간 시세 · 페이퍼 트레이딩</span>
               </div>
               <div className="dt-strat">
                 {agent.strat} · 백커 <b className="num">{agent.backers.toLocaleString()}</b>명 · 위임 자본{" "}

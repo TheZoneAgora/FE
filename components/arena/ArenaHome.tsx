@@ -17,7 +17,7 @@ import { useArenaAgents, type ArenaAgent } from "@/components/arena/useArenaAgen
 import { useCountUp } from "@/components/arena/useCountUp";
 import { usePrefersReducedMotion } from "@/components/arena/useReducedMotion";
 import { useCharacterBlink } from "@/components/arena/characters";
-import { fmtUsd } from "@/components/arena/format";
+import { fmtPct, fmtUsd } from "@/components/arena/format";
 import { executeSignalProviderWithX402Mock } from "@/lib/x402/client";
 
 const ONBOARD_KEY = "agora-onboarded";
@@ -27,6 +27,10 @@ function ArenaHomeInner() {
   useCharacterBlink();
   const reduced = usePrefersReducedMotion();
   const agents = useArenaAgents();
+  const topEarner = agents.reduce<ArenaAgent | null>(
+    (best, a) => (!best || a.ret > best.ret ? a : best),
+    null
+  );
   const { showToast } = useToast();
   const wallet = useWalletConnect();
 
@@ -143,6 +147,13 @@ function ArenaHomeInner() {
                 지금, 누가 <span className="accent">이기고</span> 있나
               </h1>
               <p className="hero-sub">트랙 위 위치가 곧 시즌 성과입니다. 캐릭터를 누르면 전적을 볼 수 있어요.</p>
+              {topEarner && (
+                <p className="hero-sub top-earner num">
+                  <span className="dot" /> 지금 가장 많이 버는 중: <b>{topEarner.name}</b>{" "}
+                  <span className={topEarner.ret >= 0 ? "up" : "dn"}>{fmtPct(topEarner.ret)}</span> ·{" "}
+                  {topEarner.symbol} 실시간 시세 기반
+                </p>
+              )}
             </div>
             <div className="hero-kpis">
               <div className="kpi">

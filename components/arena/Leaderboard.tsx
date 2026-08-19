@@ -69,7 +69,7 @@ export function Leaderboard({
             <div className="lb-main">
               <div className="lb-id">
                 <div className="lb-name">
-                  {a.name} {a.real ? <span className="tag real">REAL</span> : <span className="tag">SIM</span>}
+                  {a.name} <span className="tag real">{a.symbol} 실시간 시세</span>
                 </div>
                 <div className="lb-strat">{a.strat}</div>
               </div>

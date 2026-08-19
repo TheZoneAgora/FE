@@ -19,7 +19,11 @@ export interface ArenaAgent {
   id: string;
   name: string;
   strat: string;
+  /** 전 에이전트가 실시간 시세를 추종하는 페이퍼 트레이딩이라 항상 true — UI에서
+   *  REAL/SIM을 가르는 용도가 아니라 "실데이터 기반" 배지를 다는 데 쓴다. */
   real: boolean;
+  /** 실제로 추종하는 실시간 시세 심볼 (Binance 티커) — "무엇의 실데이터인지" 사용자에게 명시. */
+  symbol: string;
   accent: string;
   ret: number;
   mdd: number;
@@ -76,7 +80,8 @@ function buildAgent(
     id: state.agentId,
     name: (seed?.name ?? state.agentId).toUpperCase(),
     strat: seed ? stratLabel(seed.tagline) : state.strategy,
-    real: seed?.isReal ?? false,
+    real: seed?.isReal ?? true,
+    symbol: state.symbol.replace(/USDT$/, ""),
     accent: characterFor(state.agentId).accent,
     ret,
     mdd,
