@@ -1,11 +1,23 @@
 import { getPriceFeed } from "@/lib/live/PriceFeed";
+import {
+  ALL_SYMBOLS,
+  FEE_BPS,
+  HISTORY_MAX,
+  INITIAL_CAPITAL,
+  POSITION_FRACTION,
+  STABLE_ARB_COOLDOWN_TICKS,
+  STRATEGY_CONFIGS,
+  decide,
+  verifySignal,
+  type StrategyConfig,
+  type StrategyExtra,
+} from "@/lib/live/strategyLogic";
 import type {
   ActivityEvent,
   EngineSnapshot,
   EngineTick,
   LiveAgentState,
   LivePosition,
-  LiveStrategyKind,
   OrderExecutedEvent,
   PriceTick,
   Signal,
@@ -25,223 +37,22 @@ import type {
 //   delphi (polymarket, 이벤트성 점프)   -> breakout   / SOLUSDT  최근 N틱 고점/저점 돌파
 //   zephyr (weather-arb, 저변동 그라인드) -> stable-arb / SUI·BTC 페어 저빈도 소액 신호
 //
-// 참고: LiveStrategyEngine은 여기서 다루는 페이퍼 포지션/PnL만 계산한다.
-// MINT의 "실데이터" 자체(시즌 곡선)는 lib/data/AgentDataSource.ts 쪽 별도 소스가 유지한다.
+// 전략 상수·판정 로직은 lib/live/strategyLogic.ts에만 정의한다 — app/api/signals가
+// 같은 로직을 서버에서 재사용(실시간 klines 리플레이)하므로, 화면에 보여주는 것과
+// API로 내려주는 시그널이 서서히 달라지는 걸 막기 위함이다.
+//
+// 참고: 여기서는 페이퍼 포지션/PnL만 계산한다.
+// MINT의 "실데이터"(과거 시즌 곡선 스냅샷) 자체는 lib/data/AgentDataSource.ts가 유지한다.
 
-const ALL_SYMBOLS: TickerSymbol[] = ["SUIUSDT", "BTCUSDT", "ETHUSDT", "SOLUSDT"];
-
-const INITIAL_CAPITAL = 10_000;
-const FEE_BPS = 10;
-const HISTORY_MAX = 60;
 const EQUITY_SERIES_MAX = 500;
 const EVENTS_MAX = 200;
 const STORAGE_KEY = "agora-live-engine-v1";
 const STORAGE_VERSION = 1;
 
-const RISK_LIMIT_BPS = 7000;
-const DEVIATION_LIMIT_BPS = 500; // 5%
-const GRID_STEP = 0.006; // 0.6%
-const MOMENTUM_SHORT = 5;
-const MOMENTUM_LONG = 20;
-const CONTRARIAN_LOOKBACK = 4;
-const CONTRARIAN_THRESHOLD = 0.012; // 1.2%
-const BREAKOUT_LOOKBACK = 20;
-const STABLE_ARB_MA_WINDOW = 10;
-const STABLE_ARB_DEVIATION_ENTRY = 0.003; // 0.3%
-const STABLE_ARB_DEVIATION_EXIT = 0.001; // 0.1%
-const STABLE_ARB_COOLDOWN_TICKS = 6; // 저빈도 유지용 최소 대기 틱 수
-
-interface StrategyConfig {
-  agentId: string;
-  strategy: LiveStrategyKind;
-  symbol: TickerSymbol;
-}
-
-const STRATEGY_CONFIGS: StrategyConfig[] = [
-  { agentId: "axiom", strategy: "momentum", symbol: "BTCUSDT" },
-  { agentId: "mint", strategy: "contrarian", symbol: "SUIUSDT" },
-  { agentId: "atlas", strategy: "grid", symbol: "ETHUSDT" },
-  { agentId: "delphi", strategy: "breakout", symbol: "SOLUSDT" },
-  { agentId: "zephyr", strategy: "stable-arb", symbol: "SUIUSDT" },
-];
-
-const POSITION_FRACTION: Record<LiveStrategyKind, number> = {
-  momentum: 0.5,
-  contrarian: 0.5,
-  grid: 0.4,
-  breakout: 0.5,
-  "stable-arb": 0.2,
-};
-
-// 전략별 기준 위험도(bps) + 최근 변동성 + 잡음을 합산해 리스크 점수를 만든다.
-// base~2000-2800 + volTerm(0~1500) + noise(0~5000 균등분포) 조합은 리젝률이
-// 대략 15~25% 대역에 오도록 역산한 근사치이며, 실거래 데이터로 보정된 값은 아니다.
-const STRATEGY_BASE_RISK_BPS: Record<LiveStrategyKind, number> = {
-  momentum: 2600,
-  breakout: 2800,
-  grid: 2000,
-  contrarian: 2200,
-  "stable-arb": 1800,
-};
-
-interface StrategyExtra {
-  cooldownTicks: number;
-  anchorPrice: number | null;
-}
-
-interface VerifyResult {
-  verdict: "VERIFIED" | "REJECTED";
-  riskScoreBps: number;
-  reason?: string;
-}
-
 interface FillResult {
   fillPrice: number;
   quantity: number;
   feeBps: number;
-}
-
-function sma(values: number[], n: number): number | null {
-  if (values.length < n) return null;
-  const window = values.slice(-n);
-  return window.reduce((a, b) => a + b, 0) / n;
-}
-
-function pctChangeOverLookback(values: number[], n: number): number | null {
-  if (values.length < n + 1) return null;
-  const past = values[values.length - 1 - n];
-  const current = values[values.length - 1];
-  if (!past) return null;
-  return (current - past) / past;
-}
-
-function computeVolatilityBps(prices: number[], lookback = 10): number {
-  if (prices.length < lookback + 1) return 0;
-  const window = prices.slice(-(lookback + 1));
-  const returns: number[] = [];
-  for (let i = 1; i < window.length; i++) {
-    const prev = window[i - 1];
-    if (prev === 0) continue;
-    returns.push((window[i] - prev) / prev);
-  }
-  if (returns.length === 0) return 0;
-  const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-  const variance =
-    returns.reduce((a, b) => a + (b - mean) ** 2, 0) / returns.length;
-  return Math.sqrt(variance) * 10_000;
-}
-
-function computeDeviationBps(prices: number[], lookback = 20): number {
-  const ma = sma(prices, lookback);
-  const current = prices[prices.length - 1];
-  if (ma === null || current === undefined || ma === 0) return 0;
-  return Math.abs((current - ma) / ma) * 10_000;
-}
-
-function computeRiskScoreBps(strategy: LiveStrategyKind, prices: number[]): number {
-  const base = STRATEGY_BASE_RISK_BPS[strategy];
-  const volTerm = Math.min(1500, computeVolatilityBps(prices) * 60);
-  const noise = Math.random() * 5000;
-  return Math.round(Math.min(10_000, Math.max(0, base + volTerm + noise)));
-}
-
-function verifySignal(strategy: LiveStrategyKind, prices: number[]): VerifyResult {
-  const riskScoreBps = computeRiskScoreBps(strategy, prices);
-  if (riskScoreBps > RISK_LIMIT_BPS) {
-    return { verdict: "REJECTED", riskScoreBps, reason: "위험도 상한 초과" };
-  }
-  const deviationBps = computeDeviationBps(prices);
-  if (deviationBps > DEVIATION_LIMIT_BPS) {
-    return {
-      verdict: "REJECTED",
-      riskScoreBps,
-      reason: `가격 편차 임계치 초과 (기준가 대비 ${(deviationBps / 100).toFixed(2)}%)`,
-    };
-  }
-  return { verdict: "VERIFIED", riskScoreBps };
-}
-
-function decideMomentum(prices: number[], hasPosition: boolean): SignalSide | null {
-  const short = sma(prices, MOMENTUM_SHORT);
-  const long = sma(prices, MOMENTUM_LONG);
-  if (short === null || long === null) return null;
-  if (!hasPosition && short > long) return "BUY";
-  if (hasPosition && short < long) return "SELL";
-  return null;
-}
-
-function decideContrarian(prices: number[], hasPosition: boolean): SignalSide | null {
-  const change = pctChangeOverLookback(prices, CONTRARIAN_LOOKBACK);
-  if (change === null) return null;
-  if (!hasPosition && change <= -CONTRARIAN_THRESHOLD) return "BUY";
-  if (hasPosition && change >= CONTRARIAN_THRESHOLD) return "SELL";
-  return null;
-}
-
-function decideBreakout(prices: number[], hasPosition: boolean): SignalSide | null {
-  if (prices.length < BREAKOUT_LOOKBACK + 1) return null;
-  const current = prices[prices.length - 1];
-  const window = prices.slice(-(BREAKOUT_LOOKBACK + 1), -1);
-  const high = Math.max(...window);
-  const low = Math.min(...window);
-  if (!hasPosition && current > high) return "BUY";
-  if (hasPosition && current < low) return "SELL";
-  return null;
-}
-
-function decideGrid(
-  extra: StrategyExtra,
-  hasPosition: boolean,
-  position: LivePosition | null,
-  currentPrice: number
-): SignalSide | null {
-  if (extra.anchorPrice === null) {
-    extra.anchorPrice = currentPrice; // 최초 관측가를 그리드 기준가로 설정
-    return null;
-  }
-  if (!hasPosition) {
-    if (currentPrice <= extra.anchorPrice * (1 - GRID_STEP)) {
-      extra.anchorPrice = currentPrice; // 다음 그리드 레벨을 이 가격 기준으로 재설정
-      return "BUY";
-    }
-    if (currentPrice >= extra.anchorPrice * (1 + GRID_STEP)) {
-      // 매수 없이 그리드 상단을 이탈 — 추세 상승으로 보고 기준가만 재중심화
-      extra.anchorPrice = currentPrice;
-    }
-    return null;
-  }
-  if (position && currentPrice >= position.entryPrice * (1 + GRID_STEP)) {
-    return "SELL";
-  }
-  return null;
-}
-
-function decideStableArb(
-  histories: Record<TickerSymbol, number[]>,
-  extra: StrategyExtra,
-  hasPosition: boolean
-): SignalSide | null {
-  if (extra.cooldownTicks > 0) return null;
-  const suiHist = histories.SUIUSDT;
-  const btcHist = histories.BTCUSDT;
-  const len = Math.min(suiHist.length, btcHist.length);
-  if (len < STABLE_ARB_MA_WINDOW + 1) return null;
-
-  const ratios: number[] = [];
-  for (let i = 0; i < len; i++) {
-    const sui = suiHist[suiHist.length - len + i];
-    const btc = btcHist[btcHist.length - len + i];
-    if (btc === 0) continue;
-    ratios.push(sui / btc);
-  }
-  const ma = sma(ratios, STABLE_ARB_MA_WINDOW);
-  const current = ratios[ratios.length - 1];
-  if (ma === null || current === undefined || ma === 0) return null;
-
-  const deviation = (current - ma) / ma;
-  if (!hasPosition && deviation <= -STABLE_ARB_DEVIATION_ENTRY) return "BUY";
-  if (hasPosition && deviation >= STABLE_ARB_DEVIATION_EXIT) return "SELL";
-  return null;
 }
 
 function openPosition(
@@ -393,7 +204,8 @@ class LiveStrategyEngineImpl {
       extra.cooldownTicks -= 1;
     }
 
-    const side = this.decide(cfg, runtime, extra, price);
+    const hasPosition = runtime.position !== null;
+    const side = decide(cfg, extra, hasPosition, runtime.position, price, this.histories);
     if (side) {
       const signal = this.createSignal(cfg, side, price);
       newEvents.push(this.buildSignalReceivedEvent(signal));
@@ -426,29 +238,6 @@ class LiveStrategyEngineImpl {
     }
   }
 
-  private decide(
-    cfg: StrategyConfig,
-    runtime: LiveAgentState,
-    extra: StrategyExtra,
-    currentPrice: number
-  ): SignalSide | null {
-    const prices = this.histories[cfg.symbol];
-    const hasPosition = runtime.position !== null;
-    switch (cfg.strategy) {
-      case "momentum":
-        return decideMomentum(prices, hasPosition);
-      case "contrarian":
-        return decideContrarian(prices, hasPosition);
-      case "breakout":
-        return decideBreakout(prices, hasPosition);
-      case "grid":
-        return decideGrid(extra, hasPosition, runtime.position, currentPrice);
-      case "stable-arb":
-        return decideStableArb(this.histories, extra, hasPosition);
-      default:
-        return null;
-    }
-  }
 
   private updateHistories(prices: Record<TickerSymbol, number>): void {
     for (const symbol of ALL_SYMBOLS) {
