@@ -5,6 +5,8 @@ import { buildAgentSignal, listAgentIds } from "@/lib/live/signalApi";
 // AgoraAgent가 이 엔드포인트를 폴링해 latest_signal을 받아 vault 실행 여부를
 // 스스로 판단하는 시나리오를 염두에 둔 응답 스키마.
 export const dynamic = "force-dynamic";
+// Binance는 미국 IP를 차단한다(HTTP 451) — Vercel 기본 리전이 미국이라 서울로 고정.
+export const preferredRegion = "icn1";
 
 export async function GET(
   _req: Request,
