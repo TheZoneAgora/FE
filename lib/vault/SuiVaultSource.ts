@@ -153,7 +153,7 @@ const AGENT_STATUS_BY_CODE: Record<number, AgentStatus> = {
 // u8이지만 JSON-RPC가 0, "0", "0.0" 어느 모양으로든 줄 수 있어 숫자로 통일해 읽는다.
 // 모르는 값이면 낙관적으로 ACTIVE라고 보지 않고 PAUSED로 떨어뜨린다 —
 // 실제로는 거래 중인데 멈춘 것처럼 보이는 쪽이, 멈췄는데 도는 것처럼 보이는 쪽보다 안전하다.
-function parseAgentStatus(value: unknown): AgentStatus {
+export function parseAgentStatus(value: unknown): AgentStatus {
   if (value === undefined || value === null) return "PAUSED";
 
   const code = Number(value);
@@ -171,7 +171,7 @@ const TRADE_LIMIT_KEYS = [
 
 // 실제로 바뀐 한도만 추린다. 안 바뀐 값까지 매번 호출하면 트랜잭션이 불필요하게
 // 커지고, 온체인에서 "epoch 한도보다 큰 1회 한도" 같은 중간 상태를 만들 위험도 있다.
-function changedTradeLimits(
+export function changedTradeLimits(
   current: RiskPolicy,
   next: RiskPolicy
 ): VaultTradeLimits | undefined {
@@ -190,7 +190,7 @@ function changedTradeLimits(
 
 // 하나라도 올리는 값이 있으면 epoch 한도를 먼저 올려야 한다.
 // (온체인이 1회 한도 <= epoch 한도를 요구한다.)
-function isRaisingLimits(
+export function isRaisingLimits(
   current: RiskPolicy,
   limits: VaultTradeLimits | undefined
 ): boolean {
