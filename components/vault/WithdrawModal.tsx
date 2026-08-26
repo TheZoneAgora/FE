@@ -2,36 +2,52 @@
 
 import { useState } from "react";
 import { Modal } from "@/components/vault/Modal";
-import { formatUsdc, parseDecimalToBigInt } from "@/components/vault/format";
+import { formatSui, formatUsdc, parseDecimalToBigInt } from "@/components/vault/format";
+
+// 출금 대상. crypto는 Agent를 멈춘 뒤 포지션을 코인째 빼올 때 쓴다 —
+// 전액 출금은 fiat·crypto를 한꺼번에 비우므로 부분 회수 경로가 따로 필요하다.
+type WithdrawMode = "fiat" | "crypto" | "all";
 
 export function WithdrawModal({
   open,
   onClose,
   fiatBalance,
+  cryptoBalance,
   onSubmitAmount,
+  onSubmitCrypto,
   onSubmitAll,
 }: {
   open: boolean;
   onClose: () => void;
   fiatBalance: bigint;
+  cryptoBalance: bigint;
   onSubmitAmount: (amount: bigint) => Promise<unknown>;
+  onSubmitCrypto: (amount: bigint) => Promise<unknown>;
   onSubmitAll: () => Promise<unknown>;
 }) {
   const [input, setInput] = useState("");
-  const [full, setFull] = useState(false);
+  const [mode, setMode] = useState<WithdrawMode>("fiat");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const parsed = parseDecimalToBigInt(input, 6);
-  const valid = full ? fiatBalance > 0n : parsed !== null && parsed > 0n && parsed <= fiatBalance;
+  const isCrypto = mode === "crypto";
+  // USDC는 6, SUI는 9 decimals다. 자릿수를 섞으면 조용히 1000배 틀린 금액이 나간다.
+  const parsed = parseDecimalToBigInt(input, isCrypto ? 9 : 6);
+  const available = isCrypto ? cryptoBalance : fiatBalance;
+  const valid =
+    mode === "all"
+      ? fiatBalance > 0n || cryptoBalance > 0n
+      : parsed !== null && parsed > 0n && parsed <= available;
 
   async function handleSubmit() {
     if (!valid) return;
     setSubmitting(true);
     setError(null);
     try {
-      if (full) await onSubmitAll();
-      else if (parsed !== null) await onSubmitAmount(parsed);
+      if (mode === "all") await onSubmitAll();
+      else if (parsed !== null) {
+        await (isCrypto ? onSubmitCrypto(parsed) : onSubmitAmount(parsed));
+      }
       setInput("");
       onClose();
     } catch (e) {
@@ -47,32 +63,44 @@ export function WithdrawModal({
         <h2 className="font-display text-lg font-bold text-warm-ivory">출금</h2>
         <p className="mt-1 text-[13px] text-muted-light">
           사용 가능 잔액: <span className="tabular-nums">{formatUsdc(fiatBalance)}</span> USDC
+          {cryptoBalance > 0n && (
+            <>
+              {" · "}
+              <span className="tabular-nums">{formatSui(cryptoBalance)}</span> 코인
+            </>
+          )}
         </p>
 
         <div className="mt-5 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setFull(false)}
-            className={`flex min-h-[44px] items-center rounded-full px-3 text-[12px] font-semibold ${
-              !full ? "bg-agora-orange text-arena-black" : "border border-white/15 text-muted-light"
-            }`}
-          >
-            직접 입력
-          </button>
-          <button
-            type="button"
-            onClick={() => setFull(true)}
-            className={`flex min-h-[44px] items-center rounded-full px-3 text-[12px] font-semibold ${
-              full ? "bg-agora-orange text-arena-black" : "border border-white/15 text-muted-light"
-            }`}
-          >
-            전액 출금
-          </button>
+          {(
+            [
+              ["fiat", "USDC"],
+              ["crypto", "코인"],
+              ["all", "전액 출금"],
+            ] as Array<[WithdrawMode, string]>
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => {
+                setMode(value);
+                setInput("");
+                setError(null);
+              }}
+              className={`flex min-h-[44px] items-center rounded-full px-3 text-[12px] font-semibold ${
+                mode === value
+                  ? "bg-agora-orange text-arena-black"
+                  : "border border-white/15 text-muted-light"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {!full && (
+        {mode !== "all" && (
           <label className="mt-4 block text-[12px] font-medium text-muted-light">
-            금액 (USDC)
+            금액 ({isCrypto ? "코인" : "USDC"})
             <input
               autoFocus
               inputMode="decimal"

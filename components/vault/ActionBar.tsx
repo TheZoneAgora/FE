@@ -48,7 +48,9 @@ export function ActionBar({ vault, actions }: { vault: VaultState; actions: Acti
         open={modal === "withdraw"}
         onClose={() => setModal(null)}
         fiatBalance={vault.fiatBalance}
+        cryptoBalance={vault.cryptoBalance}
         onSubmitAmount={actions.withdrawAmount}
+        onSubmitCrypto={actions.withdrawCrypto}
         onSubmitAll={actions.withdrawAll}
       />
       <EmergencyExitModal

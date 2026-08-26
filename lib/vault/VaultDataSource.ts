@@ -41,6 +41,9 @@ export interface VaultDataSource {
   createVault(owner: string, params: CreateVaultParams): Promise<VaultState>;
   depositMore(owner: string, amount: bigint): Promise<VaultState>;
   withdrawAmount(owner: string, amount: bigint): Promise<VaultState>;
+  /** crypto 잔액만 일부 출금한다. Agent를 멈춘 뒤 포지션을 코인째 빼올 때 쓴다.
+   *  withdrawAll은 fiat·crypto를 한꺼번에 비우므로 부분 회수는 이 경로가 필요하다. */
+  withdrawCrypto(owner: string, amount: bigint): Promise<VaultState>;
   withdrawAll(owner: string): Promise<VaultState>;
 
   revokeAgent(owner: string): Promise<VaultState>;

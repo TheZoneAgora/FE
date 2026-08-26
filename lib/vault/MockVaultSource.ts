@@ -306,6 +306,20 @@ export class MockVaultSource implements VaultDataSource {
     return record.state;
   }
 
+  async withdrawCrypto(owner: string, amount: bigint): Promise<VaultState> {
+    if (amount <= 0n) throw new Error("amount must be greater than zero.");
+    const record = this.requireVault(owner);
+    if (amount > record.state.cryptoBalance) {
+      throw new Error("amount exceeds cryptoBalance.");
+    }
+    record.state.cryptoBalance -= amount;
+    const activity = this.appendActivity(record, "WithdrawalExecuted", {
+      cryptoWithdrawn: amount.toString(),
+    });
+    this.commit(owner, record, activity);
+    return record.state;
+  }
+
   async withdrawAll(owner: string): Promise<VaultState> {
     const record = this.requireVault(owner);
     const withdrawnFiat = record.state.fiatBalance;

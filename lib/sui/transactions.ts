@@ -102,19 +102,20 @@ function requireBps(value: U64Input, label: string): bigint {
   return result;
 }
 
-// 모든 Vault moveCall에서 공통으로 사용하는 Transaction 생성 함수.
-// 네트워크에 전송하지 않고 서명 전 Transaction만 반환한다.
-function buildVaultMoveCall({
-  packageId,
-  functionName,
-  buildArguments,
-}: {
-  packageId: string | undefined;
-  functionName: string;
-  buildArguments: (transaction: Transaction) => unknown[];
-}): Transaction {
-  const transaction = new Transaction();
-
+// 이미 만들어 둔 Transaction에 Vault moveCall을 하나 덧붙인다.
+// 한 트랜잭션에 여러 호출을 묶어야 할 때(정책 저장 + 한도 변경) 쓴다.
+function addVaultMoveCall(
+  transaction: Transaction,
+  {
+    packageId,
+    functionName,
+    buildArguments,
+  }: {
+    packageId: string | undefined;
+    functionName: string;
+    buildArguments: (transaction: Transaction) => unknown[];
+  }
+): Transaction {
   transaction.moveCall({
     package: requirePackageId(packageId),
     module: VAULT_MODULE,
@@ -129,6 +130,16 @@ function buildVaultMoveCall({
   });
 
   return transaction;
+}
+
+// 모든 Vault moveCall에서 공통으로 사용하는 Transaction 생성 함수.
+// 네트워크에 전송하지 않고 서명 전 Transaction만 반환한다.
+function buildVaultMoveCall(params: {
+  packageId: string | undefined;
+  functionName: string;
+  buildArguments: (transaction: Transaction) => unknown[];
+}): Transaction {
+  return addVaultMoveCall(new Transaction(), params);
 }
 
 export interface BuildCreateVaultTransactionParams {
@@ -380,6 +391,11 @@ export interface BuildConfigureExecutionPolicyTransactionParams {
   maxRiskScoreBps: U64Input;
   lossWindowMs: U64Input;
   maxWindowLossAmount: U64Input;
+  /** 함께 바꿀 거래 한도. configure_execution_policy가 받지 않는 값들이라
+   *  별도 호출로 같은 트랜잭션에 덧붙인다. 생략하면 한도는 건드리지 않는다. */
+  limits?: VaultTradeLimits;
+  /** limits를 올리는 방향이면 true. addTradeLimitCalls 주석 참고. */
+  raisingLimits?: boolean;
 }
 
 // Owner가 원자적 주문 실행에 적용할 Vault 안전 정책을 설정한다.
@@ -397,8 +413,10 @@ export function buildConfigureExecutionPolicyTransaction({
   maxRiskScoreBps,
   lossWindowMs,
   maxWindowLossAmount,
+  limits,
+  raisingLimits = true,
 }: BuildConfigureExecutionPolicyTransactionParams): Transaction {
-  return buildVaultMoveCall({
+  const transaction = buildVaultMoveCall({
     packageId,
     functionName: "configure_execution_policy",
     buildArguments: (transaction) => [
@@ -430,6 +448,100 @@ export function buildConfigureExecutionPolicyTransaction({
       ),
     ],
   });
+
+  // 한도는 configure_execution_policy가 받지 않으므로 같은 트랜잭션에 덧붙인다.
+  // 나눠 보내면 정책만 반영되고 한도는 실패하는 중간 상태가 생길 수 있다.
+  if (limits) {
+    addTradeLimitCalls(
+      transaction,
+      packageId,
+      vaultId,
+      limits,
+      raisingLimits
+    );
+  }
+
+  return transaction;
+}
+
+/** Owner가 조정할 수 있는 4종 한도. configure_execution_policy에는 들어 있지 않고
+ *  각각 별도 함수로 분리돼 있다. 바꿀 것만 넣으면 된다. */
+export interface VaultTradeLimits {
+  maxTradeAmount?: U64Input;
+  maxEpochTradeAmount?: U64Input;
+  maxCryptoSellAmount?: U64Input;
+  maxEpochCryptoSellAmount?: U64Input;
+}
+
+const TRADE_LIMIT_FUNCTIONS: Array<{
+  key: keyof VaultTradeLimits;
+  functionName: string;
+}> = [
+  { key: "maxTradeAmount", functionName: "update_trade_limit" },
+  { key: "maxEpochTradeAmount", functionName: "update_epoch_trade_limit" },
+  { key: "maxCryptoSellAmount", functionName: "update_crypto_sell_limit" },
+  {
+    key: "maxEpochCryptoSellAmount",
+    functionName: "update_epoch_crypto_sell_limit",
+  },
+];
+
+/** 한도 변경 호출들을 기존 Transaction에 덧붙인다. 값이 없는 항목은 건너뛴다.
+ *
+ *  순서가 중요하다. 온체인 검사가 "1회 한도 <= epoch 한도"를 요구하므로, 한도를
+ *  올릴 때는 epoch를 먼저 올려야 중간 상태에서 abort하지 않는다. 반대로 내릴 때는
+ *  1회를 먼저 내려야 한다. 그래서 새 값과 현재 값을 비교해 방향을 정한다. */
+function addTradeLimitCalls(
+  transaction: Transaction,
+  packageId: string | undefined,
+  vaultId: string,
+  limits: VaultTradeLimits,
+  raising: boolean
+): Transaction {
+  const ordered = raising
+    ? [...TRADE_LIMIT_FUNCTIONS].reverse()
+    : TRADE_LIMIT_FUNCTIONS;
+
+  for (const { key, functionName } of ordered) {
+    const value = limits[key];
+    if (value === undefined) continue;
+
+    addVaultMoveCall(transaction, {
+      packageId,
+      functionName,
+      buildArguments: (tx) => [
+        tx.object(requireAddress(vaultId, "vaultId")),
+        tx.pure.u64(requirePositiveU64(value, key)),
+      ],
+    });
+  }
+
+  return transaction;
+}
+
+export interface BuildUpdateTradeLimitsTransactionParams {
+  packageId?: string;
+  vaultId: string;
+  limits: VaultTradeLimits;
+  /** epoch 한도를 먼저 올려야 하는 경우 true. 자세한 이유는 addTradeLimitCalls 주석 참고. */
+  raising?: boolean;
+}
+
+/** 한도만 바꾼다. 정책까지 함께 저장할 때는
+ *  buildConfigureExecutionPolicyTransaction에 limits를 넘겨 한 트랜잭션으로 묶는다. */
+export function buildUpdateTradeLimitsTransaction({
+  packageId = AGENT_MARKET_PACKAGE_ID,
+  vaultId,
+  limits,
+  raising = true,
+}: BuildUpdateTradeLimitsTransactionParams): Transaction {
+  return addTradeLimitCalls(
+    new Transaction(),
+    packageId,
+    vaultId,
+    limits,
+    raising
+  );
 }
 
 export interface BuildEmergencyPauseAndWithdrawFiatTransactionParams {

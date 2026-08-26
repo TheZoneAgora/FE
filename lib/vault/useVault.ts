@@ -31,6 +31,7 @@ export interface UseVaultResult {
     createVault: (params: CreateVaultParams) => Promise<VaultState>;
     depositMore: (amount: bigint) => Promise<VaultState>;
     withdrawAmount: (amount: bigint) => Promise<VaultState>;
+    withdrawCrypto: (amount: bigint) => Promise<VaultState>;
     withdrawAll: () => Promise<VaultState>;
     revokeAgent: () => Promise<VaultState>;
     reactivateAgent: () => Promise<VaultState>;
@@ -124,6 +125,7 @@ export function useVault(): UseVaultResult {
       },
       depositMore: (amount: bigint) => mustOwner(owner, (o) => source.depositMore(o, amount)),
       withdrawAmount: (amount: bigint) => mustOwner(owner, (o) => source.withdrawAmount(o, amount)),
+      withdrawCrypto: (amount: bigint) => mustOwner(owner, (o) => source.withdrawCrypto(o, amount)),
       withdrawAll: () => mustOwner(owner, (o) => source.withdrawAll(o)),
       revokeAgent: () => mustOwner(owner, (o) => source.revokeAgent(o)),
       reactivateAgent: () => mustOwner(owner, (o) => source.reactivateAgent(o)),

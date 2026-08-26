@@ -10,11 +10,17 @@ import {
   type SuiObjectResponse,
 } from "@mysten/sui/jsonRpc";
 
+import {
+  AGENT_MARKET_PACKAGE_ID,
+  AGORA_CRYPTO_COIN_TYPE,
+  AGORA_FIAT_COIN_TYPE,
+} from "@/lib/config/env";
 import { DEFAULT_RISK_POLICY } from "@/lib/vault/types";
 import type {
   AgentStatus,
   ExecutionPolicyUpdate,
   RiskPolicy,
+  VaultActivityEvent,
   VaultState,
 } from "@/lib/vault/types";
 import type {
@@ -24,6 +30,7 @@ import type {
   VaultDataSource,
   VaultSubscriber,
 } from "@/lib/vault/VaultDataSource";
+import type { VaultTradeLimits } from "@/lib/sui/transactions";
 import {
   buildConfigureExecutionPolicyTransaction,
   buildCreateVaultTransaction,
@@ -35,6 +42,7 @@ import {
   buildSetReduceOnlyTransaction,
   buildWithdrawAllTransaction,
   buildWithdrawAmountTransaction,
+  buildWithdrawCryptoAmountTransaction,
 } from "@/lib/sui/transactions";
 
 const VAULT_ID_STORAGE_KEY = "agora-vault-id";
@@ -54,12 +62,25 @@ export type SignAndExecuteFn = (
   transaction: Transaction
 ) => Promise<SignAndExecuteResult>;
 
-// getObject만 있으면 되므로 SuiJsonRpcClient 전체가 아니라 구조적으로 필요한 만큼만 요구한다.
+// SuiJsonRpcClient 전체가 아니라 구조적으로 필요한 만큼만 요구한다.
 export interface MinimalSuiObjectClient {
   getObject(input: {
     id: string;
     options?: { showContent?: boolean };
   }): Promise<SuiObjectResponse>;
+  /** 활동 내역 조회에만 쓴다. 없는 클라이언트를 주입해도 잔액·정책 조회는 동작한다. */
+  queryEvents?(input: {
+    query: { MoveEventType: string };
+    limit?: number;
+    order?: "ascending" | "descending";
+  }): Promise<{
+    data: Array<{
+      id: { txDigest: string; eventSeq: string };
+      type: string;
+      timestampMs?: string | null;
+      parsedJson?: unknown;
+    }>;
+  }>;
 }
 
 function isBrowser(): boolean {
@@ -139,6 +160,46 @@ function parseAgentStatus(value: unknown): AgentStatus {
   if (!Number.isFinite(code)) return "PAUSED";
 
   return AGENT_STATUS_BY_CODE[Math.trunc(code)] ?? "PAUSED";
+}
+
+const TRADE_LIMIT_KEYS = [
+  "maxTradeAmount",
+  "maxEpochTradeAmount",
+  "maxCryptoSellAmount",
+  "maxEpochCryptoSellAmount",
+] as const;
+
+// 실제로 바뀐 한도만 추린다. 안 바뀐 값까지 매번 호출하면 트랜잭션이 불필요하게
+// 커지고, 온체인에서 "epoch 한도보다 큰 1회 한도" 같은 중간 상태를 만들 위험도 있다.
+function changedTradeLimits(
+  current: RiskPolicy,
+  next: RiskPolicy
+): VaultTradeLimits | undefined {
+  const changed: VaultTradeLimits = {};
+  let hasChange = false;
+
+  for (const key of TRADE_LIMIT_KEYS) {
+    if (next[key] !== current[key]) {
+      changed[key] = next[key];
+      hasChange = true;
+    }
+  }
+
+  return hasChange ? changed : undefined;
+}
+
+// 하나라도 올리는 값이 있으면 epoch 한도를 먼저 올려야 한다.
+// (온체인이 1회 한도 <= epoch 한도를 요구한다.)
+function isRaisingLimits(
+  current: RiskPolicy,
+  limits: VaultTradeLimits | undefined
+): boolean {
+  if (!limits) return true;
+
+  return TRADE_LIMIT_KEYS.some((key) => {
+    const next = limits[key];
+    return next !== undefined && BigInt(next as bigint) > current[key];
+  });
 }
 
 // getObject({showContent:true}) 응답의 Move struct fields를 VaultState로 매핑한다.
@@ -409,6 +470,16 @@ export class SuiVaultSource implements VaultDataSource {
     return this.refreshAndNotify(owner);
   }
 
+  async withdrawCrypto(owner: string, amount: bigint): Promise<VaultState> {
+    const signer = this.requireSigner();
+    const tx = buildWithdrawCryptoAmountTransaction({
+      vaultId: this.requireVaultId(),
+      amount,
+    });
+    await signer(tx);
+    return this.refreshAndNotify(owner);
+  }
+
   async withdrawAll(owner: string): Promise<VaultState> {
     const signer = this.requireSigner();
     const tx = buildWithdrawAllTransaction({ vaultId: this.requireVaultId() });
@@ -458,6 +529,11 @@ export class SuiVaultSource implements VaultDataSource {
     const current = await this.getVaultState(owner);
     const merged: RiskPolicy = { ...current.policy, ...policy };
 
+    // 거래 한도 4종은 configure_execution_policy의 인자가 아니라 별도 함수다.
+    // 예전에는 merged에 담아 놓고 넘기지 않아, 설정 화면에서 한도를 바꾸고 저장하면
+    // 성공 토스트만 뜨고 온체인은 그대로였다. 바뀐 것만 골라 같은 트랜잭션에 싣는다.
+    const limits = changedTradeLimits(current.policy, merged);
+
     const tx = buildConfigureExecutionPolicyTransaction({
       vaultId: this.requireVaultId(),
       allowedPool: policy.allowedPool,
@@ -471,6 +547,8 @@ export class SuiVaultSource implements VaultDataSource {
       maxRiskScoreBps: merged.maxRiskScoreBps,
       lossWindowMs: merged.lossWindowMs,
       maxWindowLossAmount: merged.maxWindowLossAmount,
+      limits,
+      raisingLimits: isRaisingLimits(current.policy, limits),
     });
 
     await signer(tx);
@@ -506,6 +584,53 @@ export class SuiVaultSource implements VaultDataSource {
     });
     await signer(tx);
     return this.refreshAndNotify(owner);
+  }
+
+  /** 이 Vault에서 일어난 체결 이벤트를 온체인에서 읽어 활동 내역으로 만든다.
+   *
+   *  예전에는 real 모드에서도 이 조회가 아예 없어 활동 피드가 mock·라이브 엔진발
+   *  이벤트만 보여줬다. 실제 체결·수수료·부분 체결은 화면에 나타나지 않았다.
+   *
+   *  DeepBookOrderExecuted는 제네릭 타입이라 MoveEventType으로 정확히 필터하려면
+   *  FiatT/CryptoT를 알아야 한다. 둘 다 env에서 오므로 여기서 조립한다. */
+  async getActivityHistory(owner: string | null): Promise<VaultActivityEvent[]> {
+    if (!owner || !this.client.queryEvents) return [];
+
+    const fiat = AGORA_FIAT_COIN_TYPE;
+    const crypto = AGORA_CRYPTO_COIN_TYPE;
+    if (!fiat || !crypto) return [];
+
+    const vaultId = this.vaultId;
+    if (!vaultId) return [];
+
+    try {
+      const page = await this.client.queryEvents({
+        query: {
+          MoveEventType: `${AGENT_MARKET_PACKAGE_ID}::deepbook_executor::DeepBookOrderExecuted<${fiat}, ${crypto}>`,
+        },
+        limit: 50,
+        order: "descending",
+      });
+
+      return page.data
+        .filter((event) => {
+          const fields = event.parsedJson as { vault_id?: unknown } | undefined;
+          // 같은 패키지를 쓰는 다른 사용자의 Vault 이벤트도 함께 오므로 걸러낸다.
+          return typeof fields?.vault_id === "string" && fields.vault_id === vaultId;
+        })
+        .map((event) => ({
+          id: `${event.id.txDigest}:${event.id.eventSeq}`,
+          type: "DeepBookOrderExecuted" as const,
+          timestamp: Number(event.timestampMs ?? 0),
+          payload: (event.parsedJson ?? {}) as Record<string, unknown>,
+        }));
+    } catch (error) {
+      // 활동 내역은 부가 정보다. 조회가 실패해도 잔액·정책 화면까지 막지 않는다.
+      if (isBrowser()) {
+        console.warn("[SuiVaultSource] 활동 내역 조회 실패:", error);
+      }
+      return [];
+    }
   }
 
   subscribe(callback: VaultSubscriber): () => void {

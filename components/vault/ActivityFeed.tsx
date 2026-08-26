@@ -8,6 +8,16 @@ import { AgentCharacter } from "@/components/arena/characters";
 
 type Tone = "neutral" | "positive" | "negative";
 
+// Move u64는 JSON에서 문자열로 오지만, 라이브 엔진발 mock 이벤트는 number를 넣기도 한다.
+// 둘 다 받고, 해석할 수 없으면 null을 돌려 표시를 생략한다.
+function asBigint(value: unknown): bigint | null {
+  if (typeof value === "string" && /^\d+$/.test(value)) return BigInt(value);
+  if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0) {
+    return BigInt(value);
+  }
+  return null;
+}
+
 const EVENT_META: Record<VaultActivityEventType, { label: string; tone: Tone }> = {
   SignalReceived: { label: "시그널 수신", tone: "neutral" },
   SignalVerified: { label: "시그널 검증 완료", tone: "positive" },
@@ -135,7 +145,23 @@ function describeEvent(event: VaultActivityEvent): string {
       // 라이브 엔진발 체결 이벤트는 amount 대신 quantity(number, 코인 수량)를 담는다.
       const quantity =
         typeof p.quantity === "number" ? `${p.quantity.toFixed(4)} 수량` : null;
-      return [sideLine, amount ?? quantity].filter(Boolean).join(" · ");
+
+      // 온체인 DeepBookOrderExecuted에만 있는 값들. mock/엔진발 이벤트에는 없다.
+      // 유동성이 모자라면 요청액 전부가 체결되지 않으므로, 요청과 실제 체결이
+      // 다를 때만 둘을 함께 보여준다.
+      const requested = asBigint(p.requested_input);
+      const consumed = asBigint(p.consumed_input);
+      const partial =
+        requested !== null && consumed !== null && consumed < requested
+          ? `요청 ${formatUsdc(requested)} → 체결 ${formatUsdc(consumed)} USDC`
+          : null;
+
+      const fee = asBigint(p.fee_charged);
+      const feeLine = fee !== null && fee > 0n ? `수수료 ${formatUsdc(fee)} USDC` : null;
+
+      return [sideLine, partial ?? amount ?? quantity, feeLine]
+        .filter(Boolean)
+        .join(" · ");
     }
     case "EmergencyLiquidated": {
       const crypto =

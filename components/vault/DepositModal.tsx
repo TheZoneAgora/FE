@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Modal } from "@/components/vault/Modal";
 import { parseDecimalToBigInt } from "@/components/vault/format";
+import { tradingFeePercentLabel } from "@/lib/config/env";
 
 export function DepositModal({
   open,
@@ -40,6 +41,10 @@ export function DepositModal({
       <div className="p-6">
         <h2 className="font-display text-lg font-bold text-warm-ivory">입금</h2>
         <p className="mt-1 text-[13px] text-muted-light">볼트에 USDC를 추가로 입금합니다.</p>
+        <p className="mt-1 text-[12px] text-muted-light">
+          입금에는 수수료가 없습니다. 거래가 체결될 때마다 체결 금액의{" "}
+          <span className="tabular-nums">{tradingFeePercentLabel()}</span>가 수수료로 차감됩니다.
+        </p>
         <label className="mt-5 block text-[12px] font-medium text-muted-light">
           금액 (USDC)
           <input
