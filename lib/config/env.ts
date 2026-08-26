@@ -1,7 +1,7 @@
 // Env-driven config for the Sui vault integration. See .omc/specs/deep-interview-agora-vault-userside.md
 export const AGENT_MARKET_PACKAGE_ID =
   process.env.NEXT_PUBLIC_AGENT_MARKET_PACKAGE_ID ??
-  "0x0f5a55d4768a22382295652b415c0df973db45e4ac1d65c8ceadc3a331c68bfa";
+  "0x7dcf1c6495682131bcf3a41d4723f7422ca4d49aadaed5d8bc9c2e4a683deb26";
 
 export const AGORA_AGENT_OPERATOR = process.env.NEXT_PUBLIC_AGORA_AGENT_OPERATOR;
 

@@ -67,7 +67,9 @@ function isBrowser(): boolean {
 }
 
 // Move Balance<T>({ fields: { value } })와 평범한 u64 문자열/숫자를 모두 bigint로 통일한다.
-// UserVault.move 원본 소스가 없어 정확한 필드 shape를 100% 확신할 수 없으므로 방어적으로 파싱한다.
+// 필드 정의 원본: contract/sui-contract/sources/vault/investment_vault.move 의 UserVault.
+// (예전에는 원본을 볼 수 없어 추측으로 파싱했고, agora_agent_status를 boolean으로 잘못
+//  짚어 상태 표시가 항상 PAUSED로 나오는 버그가 있었다. 이제 같은 레포에 있으니 확인하고 쓸 것.)
 function unwrapMoveNumeric(value: unknown, label: string): bigint {
   if (value === null || value === undefined) {
     if (isBrowser()) {
@@ -92,10 +94,6 @@ function unwrapMoveNumeric(value: unknown, label: string): bigint {
   throw new Error(`Unable to parse Move field "${label}": ${JSON.stringify(value)}`);
 }
 
-function unwrapMoveBoolean(value: unknown): boolean {
-  return value === true || value === "true";
-}
-
 function readField(
   fields: Record<string, unknown>,
   ...keys: string[]
@@ -106,8 +104,8 @@ function readField(
   return undefined;
 }
 
-// 정책 필드가 UserVault에 flat하게 있는지, execution_policy 서브 struct로 감싸져 있는지도
-// 확실치 않아 둘 다 시도한다.
+// 현재 UserVault는 정책 필드를 flat하게 들고 있다. 서브 struct로 감싸는 형태도 함께
+// 시도하는 것은 향후 구조 변경에 대한 여지일 뿐, 지금 경로는 flat 쪽이다.
 function extractPolicyContainer(
   fields: Record<string, unknown>
 ): Record<string, unknown> {
@@ -124,6 +122,25 @@ function extractPolicyContainer(
   return fields;
 }
 
+// investment_vault.move의 agora_agent_status 코드값.
+const AGENT_STATUS_BY_CODE: Record<number, AgentStatus> = {
+  0: "ACTIVE",
+  1: "REDUCE_ONLY",
+  2: "PAUSED",
+};
+
+// u8이지만 JSON-RPC가 0, "0", "0.0" 어느 모양으로든 줄 수 있어 숫자로 통일해 읽는다.
+// 모르는 값이면 낙관적으로 ACTIVE라고 보지 않고 PAUSED로 떨어뜨린다 —
+// 실제로는 거래 중인데 멈춘 것처럼 보이는 쪽이, 멈췄는데 도는 것처럼 보이는 쪽보다 안전하다.
+function parseAgentStatus(value: unknown): AgentStatus {
+  if (value === undefined || value === null) return "PAUSED";
+
+  const code = Number(value);
+  if (!Number.isFinite(code)) return "PAUSED";
+
+  return AGENT_STATUS_BY_CODE[Math.trunc(code)] ?? "PAUSED";
+}
+
 // getObject({showContent:true}) 응답의 Move struct fields를 VaultState로 매핑한다.
 function parseVaultFields(
   fields: Record<string, unknown>,
@@ -131,26 +148,13 @@ function parseVaultFields(
 ): VaultState {
   const policyFields = extractPolicyContainer(fields);
 
-  const isPaused = unwrapMoveBoolean(readField(fields, "is_paused", "paused"));
-  const isReduceOnly = unwrapMoveBoolean(
-    readField(fields, "is_reduce_only", "reduce_only")
+  // Vault가 실제로 들고 있는 것은 u8 하나(agora_agent_status)다.
+  // is_paused 같은 boolean 필드는 컨트랙트에 존재한 적이 없어, 예전 구현은
+  // 세 번 다 undefined를 읽고 삼항의 마지막 가지로 떨어져 실제 상태와 무관하게
+  // 항상 PAUSED를 표시했다.
+  const agentStatus = parseAgentStatus(
+    readField(fields, "agora_agent_status", "agent_status")
   );
-  const isActive = unwrapMoveBoolean(
-    readField(
-      fields,
-      "is_agora_agent_active",
-      "agora_agent_active",
-      "is_active"
-    )
-  );
-
-  const agentStatus: AgentStatus = isPaused
-    ? "PAUSED"
-    : isReduceOnly
-      ? "REDUCE_ONLY"
-      : isActive
-        ? "ACTIVE"
-        : "PAUSED";
 
   const ownerField = readField(fields, "owner");
 

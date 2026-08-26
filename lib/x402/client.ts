@@ -12,6 +12,10 @@ import { normalizeStructTag } from "@mysten/sui/utils";
 import { AGENT_MARKET_PACKAGE_ID } from "@/lib/config/env";
 
 const PAYMENT_HEADER = "PAYMENT-SIGNATURE";
+// 402로 받은 requestId를 그대로 되돌려 보낸다. 온체인 영수증에는 requestId가 없어서
+// 서버는 이 헤더로만 "어느 challenge에 대한 결제인지"를 알 수 있다.
+// 없으면 Provider가 400으로 거절한다 (sources/x402/signal_handler.js).
+const REQUEST_ID_HEADER = "PAYMENT-REQUEST-ID";
 const PAYMENT_SPLITTER_MODULE = "payment_splitter";
 const CLOCK_OBJECT_ID = "0x6";
 const MAX_U64 = (1n << 64n) - 1n;
@@ -19,6 +23,8 @@ const MAX_U64 = (1n << 64n) - 1n;
 /** Provider가 HTTP 402 응답 본문으로 내려주는 결제 조건. */
 export interface X402Challenge {
   error: "Payment Required";
+  /** 서버가 발급한 이번 결제 요청의 식별자. 결제 후 재요청 때 헤더로 되돌려 준다. */
+  requestId: string;
   /** 결제 금액 (코인 최소단위, 문자열 u64) */
   price: string;
   /** 결제 코인 타입 (예: 0x...::usdc::USDC) */
@@ -69,6 +75,7 @@ export function parseChallenge(value: unknown): X402Challenge {
   const body = value as Record<string, unknown>;
   if (
     body.error !== "Payment Required" ||
+    typeof body.requestId !== "string" ||
     typeof body.price !== "string" ||
     typeof body.payee !== "string" ||
     typeof body.treasury !== "string" ||
@@ -208,6 +215,7 @@ export async function executeSignalProviderWithX402({
     headers: {
       "Content-Type": "application/json",
       [PAYMENT_HEADER]: paymentDigest,
+      [REQUEST_ID_HEADER]: challenge.requestId,
     },
     body: requestBody,
   });
