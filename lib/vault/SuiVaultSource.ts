@@ -3,17 +3,18 @@
 // 고전 SuiClient가 아니라 @mysten/sui/jsonRpc의 SuiJsonRpcClient다 (JSON-RPC API는 v2에서
 // deprecated 표시되었지만 dapp-kit 1.1.17은 여전히 이 클라이언트를 쓴다. 확인:
 // node_modules/@mysten/dapp-kit/dist/hooks/useSuiClient.d.ts).
+// 2026-09-01: Sui Foundation 공식 testnet 풀노드가 JSON-RPC를 완전히 껐다(fullnode.testnet.sui.io
+// 직접 호출 시 "Method not found" 에러로 확인). dapp-kit이 아직 gRPC를 지원하지 않아
+// TESTNET_RPC_URL(lib/config/env.ts)이 여전히 JSON-RPC를 서빙하는 서드파티 퍼블릭 노드를
+// 가리키게 해서 우회한다 — dapp-kit이 gRPC를 지원하면 이 우회는 제거해야 한다.
 import type { Transaction } from "@mysten/sui/transactions";
-import {
-  getJsonRpcFullnodeUrl,
-  SuiJsonRpcClient,
-  type SuiObjectResponse,
-} from "@mysten/sui/jsonRpc";
+import { SuiJsonRpcClient, type SuiObjectResponse } from "@mysten/sui/jsonRpc";
 
 import {
   AGENT_MARKET_PACKAGE_ID,
   AGORA_CRYPTO_COIN_TYPE,
   AGORA_FIAT_COIN_TYPE,
+  TESTNET_RPC_URL,
 } from "@/lib/config/env";
 import { DEFAULT_RISK_POLICY } from "@/lib/vault/types";
 import type {
@@ -319,7 +320,7 @@ export class SuiVaultSource implements VaultDataSource {
     this.client =
       client ??
       new SuiJsonRpcClient({
-        url: getJsonRpcFullnodeUrl("testnet"),
+        url: TESTNET_RPC_URL,
         network: "testnet",
       });
     this.vaultId = this.loadVaultId();

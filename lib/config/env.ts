@@ -10,6 +10,20 @@ export const AGORA_FIAT_COIN_TYPE = process.env.NEXT_PUBLIC_AGORA_FIAT_COIN_TYPE
 export const AGORA_CRYPTO_COIN_TYPE =
   process.env.NEXT_PUBLIC_AGORA_CRYPTO_COIN_TYPE ?? "0x2::sui::SUI";
 
+// Circle 공식 testnet USDC (Sui). 실제 RPC로 suix_getCoinMetadata 조회해 확인함
+// (decimals 6, symbol USDC, issuer Circle) — 2026-09-01 검증.
+// https://developers.circle.com/stablecoins/quickstart-setup-transfer-usdc-sui
+export const TESTNET_USDC_COIN_TYPE =
+  "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC";
+
+// Sui Foundation 공식 testnet 풀노드(fullnode.testnet.sui.io)는 2026-07 말부터
+// JSON-RPC를 껐다(gRPC/GraphQL로 이전 중이고, dapp-kit 1.1.17 최신판은 아직
+// JSON-RPC 클라이언트 타입에 고정돼 있어 gRPC로 못 바꾼다 — 생태계가 따라잡을
+// 때까지 임시로 여전히 JSON-RPC를 서빙하는 서드파티 퍼블릭 노드로 우회한다.
+// publicnode.com 엔드포인트는 suix_getCoinMetadata/sui_getObject로 직접 확인함.
+export const TESTNET_RPC_URL =
+  process.env.NEXT_PUBLIC_SUI_TESTNET_RPC_URL ?? "https://sui-testnet-rpc.publicnode.com";
+
 export type VaultMode = "mock" | "real";
 
 const VAULT_MODE = (process.env.NEXT_PUBLIC_VAULT_MODE as VaultMode | undefined) ?? "mock";
